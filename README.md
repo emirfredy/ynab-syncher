@@ -41,6 +41,7 @@ A robust transaction reconciliation service that synchronizes bank transactions 
 ```
 
 ### **Domain Layer (Framework-Free)**
+
 - **Value Objects**: `Money`, `AccountId`, `TransactionId`
 - **Entities**: `Transaction` with business logic
 - **Use Cases**: `ReconcileTransactionsUseCase`
@@ -48,6 +49,7 @@ A robust transaction reconciliation service that synchronizes bank transactions 
 - **Ports**: Clean API (inbound) and SPI (outbound) interfaces
 
 ### **Infrastructure Layer**
+
 - **Web Controllers**: REST API endpoints
 - **Persistence**: JPA repository adapters
 - **External Clients**: YNAB API and bank integration clients
@@ -56,11 +58,13 @@ A robust transaction reconciliation service that synchronizes bank transactions 
 ## 🚀 **Quick Start**
 
 ### **Prerequisites**
+
 - Java 21+
 - Maven 3.9+ (or use included wrapper)
 - Git
 
 ### **Clone and Build**
+
 ```bash
 git clone https://github.com/emirfredy/ynab-syncher.git
 cd ynab-syncher
@@ -76,6 +80,7 @@ cd ynab-syncher
 ```
 
 ### **Run Mutation Testing**
+
 ```bash
 # Generate mutation testing report
 ./mvnw -pl domain org.pitest:pitest-maven:mutationCoverage
@@ -86,24 +91,26 @@ open domain/target/pit-reports/*/index.html
 
 ## 📊 **Quality Metrics**
 
-| Metric | Value | Threshold |
-|--------|-------|-----------|
-| **Line Coverage** | 96% (158/165) | > 90% |
-| **Mutation Coverage** | 94% (67/71) | > 70% |
-| **Test Strength** | 100% | > 95% |
-| **Total Tests** | 175 | - |
-| **Architecture Tests** | 12 | - |
-| **Build Time** | ~8 seconds | < 30s |
+| Metric                 | Value         | Threshold |
+| ---------------------- | ------------- | --------- |
+| **Line Coverage**      | 96% (158/165) | > 90%     |
+| **Mutation Coverage**  | 94% (67/71)   | > 70%     |
+| **Test Strength**      | 100%          | > 95%     |
+| **Total Tests**        | 175           | -         |
+| **Architecture Tests** | 12            | -         |
+| **Build Time**         | ~8 seconds    | < 30s     |
 
 ## 🔧 **Reconciliation Strategies**
 
 ### **STRICT Strategy**
+
 - Exact date matching
 - Precise amount matching
 - Account verification
 - Best for: Automated imports with reliable data
 
-### **RANGE Strategy**  
+### **RANGE Strategy**
+
 - 3-day window matching (configurable)
 - Amount tolerance handling
 - Fuzzy description matching
@@ -124,18 +131,21 @@ var result = reconcileTransactionsUseCase.execute(request);
 ## 🧪 **Testing Strategy**
 
 ### **Domain Testing (163 tests)**
+
 - **Unit Tests**: Pure domain logic validation
 - **Property-Based Tests**: Value object invariants
 - **Strategy Tests**: Transaction matching algorithms
 - **Use Case Tests**: Business workflow validation
 
 ### **Architecture Testing (12 tests)**
+
 - **Domain Independence**: Framework-free validation
 - **Ports & Adapters**: Interface compliance
 - **Package Organization**: Structure validation
 - **Layered Architecture**: Dependency rules
 
 ### **Mutation Testing**
+
 ```bash
 # Configured with PIT for maximum quality
 - Threshold: 70% (we achieve 94%)
@@ -147,6 +157,7 @@ var result = reconcileTransactionsUseCase.execute(request);
 ## 🛡️ **Architecture Protection**
 
 ### **Build-Time Protection (Maven Enforcer)**
+
 ```xml
 <!-- Prevents framework dependencies in domain -->
 <bannedDependencies>
@@ -160,6 +171,7 @@ var result = reconcileTransactionsUseCase.execute(request);
 ```
 
 ### **Test-Time Validation (ArchUnit)**
+
 ```java
 // Validates hexagonal architecture principles
 @Test
@@ -202,12 +214,14 @@ ynab-syncher/
 ## 🔗 **Integration Points**
 
 ### **YNAB API**
+
 - OAuth 2.0 authentication
 - Milliunits money format (1000 = $1.00)
 - Transaction categorization
 - Account synchronization
 
 ### **Bank APIs**
+
 - OFX/QFX import support
 - CSV transaction parsing
 - Real-time transaction feeds
@@ -216,12 +230,14 @@ ynab-syncher/
 ## 🚧 **Development**
 
 ### **Adding New Features**
+
 1. **Domain First**: Implement in pure domain layer
 2. **Test Coverage**: Ensure >90% line coverage + mutation testing
 3. **Architecture**: Validate with ArchUnit tests
 4. **Integration**: Add infrastructure adapters
 
 ### **Code Quality Gates**
+
 - ✅ All tests pass (175 tests)
 - ✅ Mutation coverage >70% (currently 94%)
 - ✅ Architecture tests pass (12 tests)

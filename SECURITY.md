@@ -4,16 +4,17 @@
 
 We provide security updates for the following versions:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.0.x   | ✅ Supported       |
-| < 1.0   | ❌ Not supported   |
+| Version | Supported        |
+| ------- | ---------------- |
+| 1.0.x   | ✅ Supported     |
+| < 1.0   | ❌ Not supported |
 
 ## 🚨 **Reporting a Vulnerability**
 
 We take security vulnerabilities seriously. If you discover a security issue, please follow these guidelines:
 
 ### **Private Disclosure**
+
 **DO NOT** create a public GitHub issue for security vulnerabilities.
 
 Instead, please report security issues privately by:
@@ -23,6 +24,7 @@ Instead, please report security issues privately by:
 3. **Direct Contact**: Contact the maintainer directly via their GitHub profile
 
 ### **What to Include**
+
 When reporting a security vulnerability, please include:
 
 - **Description**: Clear description of the vulnerability
@@ -33,6 +35,7 @@ When reporting a security vulnerability, please include:
 - **Environment**: Java version, OS, and other relevant details
 
 ### **Response Timeline**
+
 We aim to respond to security reports within:
 
 - **Initial Response**: 48 hours
@@ -42,18 +45,21 @@ We aim to respond to security reports within:
 ## 🛡️ **Security Measures**
 
 ### **Code Security**
+
 - **Dependency Scanning**: Automated vulnerability scanning via GitHub Dependabot
 - **Static Analysis**: Security-focused code analysis
 - **Minimal Dependencies**: Limited external dependencies to reduce attack surface
 - **Input Validation**: All external inputs are validated and sanitized
 
 ### **API Security**
+
 - **Authentication**: Secure YNAB API token handling
 - **Authorization**: Proper access controls
 - **Rate Limiting**: Protection against abuse
 - **HTTPS Only**: All external communications use HTTPS
 
 ### **Build Security**
+
 - **Supply Chain**: Verified dependencies and build reproducibility
 - **CI/CD Security**: Secure build pipeline with credential management
 - **Code Signing**: Release artifacts are signed (when applicable)
@@ -61,12 +67,14 @@ We aim to respond to security reports within:
 ## 🔍 **Security Best Practices**
 
 ### **For Users**
+
 - Keep your YNAB API tokens secure and private
 - Use environment variables for sensitive configuration
 - Keep the application and its dependencies updated
 - Monitor application logs for suspicious activity
 
 ### **For Developers**
+
 - Follow secure coding practices
 - Never commit sensitive data (API keys, passwords, etc.)
 - Use parameterized queries to prevent injection attacks
@@ -76,11 +84,13 @@ We aim to respond to security reports within:
 ## 🚫 **Known Security Considerations**
 
 ### **YNAB API Integration**
+
 - **API Token Storage**: Ensure YNAB API tokens are stored securely
 - **Token Rotation**: Regularly rotate API tokens
 - **Scope Limitation**: Use minimal required API permissions
 
 ### **Financial Data**
+
 - **Data Sensitivity**: Financial transaction data requires special handling
 - **Logging**: Avoid logging sensitive financial information
 - **Memory Management**: Clear sensitive data from memory when no longer needed
@@ -110,11 +120,13 @@ In case of a security incident:
 ## 📚 **Security Resources**
 
 ### **External Resources**
+
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [Java Security Guidelines](https://www.oracle.com/java/technologies/javase/seccodeguide.html)
 - [Spring Security Documentation](https://spring.io/projects/spring-security)
 
 ### **Tools and Scanning**
+
 - **Dependency Check**: OWASP Dependency Check
 - **Static Analysis**: SpotBugs, SonarQube
 - **Container Scanning**: If using Docker containers
@@ -130,6 +142,7 @@ We appreciate responsible disclosure of security vulnerabilities. Security resea
 ## 📞 **Contact**
 
 For security-related questions or concerns:
+
 - **GitHub**: Create a private security advisory
 - **General Security Questions**: Use GitHub Discussions
 

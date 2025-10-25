@@ -11,11 +11,13 @@ This project follows a code of conduct to ensure a welcoming environment for eve
 Before contributing, please understand our core architectural principles:
 
 ### **Hexagonal Architecture**
+
 - **Domain Layer**: Pure business logic, no framework dependencies
 - **Infrastructure Layer**: Adapters for external systems
 - **Ports**: Clean interfaces between layers
 
 ### **Quality Standards**
+
 - **Test Coverage**: Minimum 90% line coverage
 - **Mutation Coverage**: Minimum 70% (currently 94%)
 - **Architecture Tests**: All ArchUnit tests must pass
@@ -24,12 +26,14 @@ Before contributing, please understand our core architectural principles:
 ## 🚀 **Getting Started**
 
 ### **Prerequisites**
+
 - Java 21+
 - Maven 3.9+
 - Git
 - IDE with Java support (IntelliJ IDEA recommended)
 
 ### **Development Setup**
+
 ```bash
 # Clone the repository
 git clone https://github.com/emirfredy/ynab-syncher.git
@@ -48,22 +52,26 @@ cd ynab-syncher
 ## 📋 **Development Workflow**
 
 ### **1. Create Feature Branch**
+
 ```bash
 git checkout -b feature/your-feature-name
 ```
 
 ### **2. Follow TDD Approach**
+
 1. **Red**: Write failing test first
 2. **Green**: Implement minimal code to pass
 3. **Refactor**: Improve code while keeping tests green
 
 ### **3. Maintain Quality Gates**
+
 - All tests must pass (175+ tests)
 - Mutation coverage must stay ≥70%
 - Architecture tests must pass
 - No framework dependencies in domain
 
 ### **4. Commit Guidelines**
+
 Use [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```bash
@@ -86,6 +94,7 @@ git commit -m "refactor: extract transaction matcher factory"
 ## 🧪 **Testing Guidelines**
 
 ### **Domain Layer Testing**
+
 ```java
 // Example: Value Object Test
 @Test
@@ -93,10 +102,10 @@ git commit -m "refactor: extract transaction matcher factory"
 void shouldCreateMoneyWithPositiveMilliunits() {
     // Given
     long milliunits = 1000; // $1.00
-    
+
     // When
     Money money = Money.of(milliunits);
-    
+
     // Then
     assertThat(money.milliunits()).isEqualTo(1000);
     assertThat(money.dollars()).isEqualTo(BigDecimal.ONE);
@@ -104,6 +113,7 @@ void shouldCreateMoneyWithPositiveMilliunits() {
 ```
 
 ### **Property-Based Testing**
+
 ```java
 @Test
 @DisplayName("Money creation should be consistent")
@@ -113,13 +123,14 @@ void moneyCreationShouldBeConsistent() {
         BigDecimal dollars = BigDecimal.valueOf(random.nextDouble() * 1000);
         Money fromDollars = Money.fromDollars(dollars);
         Money fromMilliunits = Money.of(dollars.multiply(new BigDecimal("1000")).longValue());
-        
+
         assertThat(fromDollars).isEqualTo(fromMilliunits);
     }
 }
 ```
 
 ### **Architecture Testing**
+
 ```java
 @Test
 @DisplayName("Domain should not depend on infrastructure frameworks")
@@ -159,12 +170,14 @@ ynab-syncher/
 ## 🔄 **Adding New Features**
 
 ### **Domain-First Approach**
+
 1. **Start with Domain**: Implement business logic first
 2. **Add Tests**: Comprehensive test coverage with mutation testing
 3. **Create Ports**: Define clean interfaces
 4. **Implement Adapters**: Add infrastructure implementations
 
 ### **Example: Adding New Reconciliation Strategy**
+
 ```java
 // 1. Domain: Add new strategy enum
 public enum ReconciliationStrategy {
@@ -195,6 +208,7 @@ public TransactionMatcherFactory transactionMatcherFactory() {
 All contributions must pass these quality gates:
 
 ### **Automated Checks**
+
 - ✅ All 175+ tests pass
 - ✅ Mutation coverage ≥70%
 - ✅ Architecture tests pass
@@ -202,6 +216,7 @@ All contributions must pass these quality gates:
 - ✅ No framework dependencies in domain
 
 ### **Code Review Checklist**
+
 - [ ] Follows hexagonal architecture principles
 - [ ] Comprehensive test coverage
 - [ ] Clear, self-documenting code
@@ -212,6 +227,7 @@ All contributions must pass these quality gates:
 ## 🐛 **Bug Reports**
 
 When reporting bugs, please include:
+
 - Clear description of the issue
 - Steps to reproduce
 - Expected vs actual behavior
@@ -223,6 +239,7 @@ Use our [Bug Report Template](.github/ISSUE_TEMPLATE/bug_report.yml) for consist
 ## ✨ **Feature Requests**
 
 When suggesting features, please include:
+
 - Problem or use case being addressed
 - Proposed solution
 - Alternative approaches considered
@@ -233,12 +250,14 @@ Use our [Feature Request Template](.github/ISSUE_TEMPLATE/feature_request.yml) f
 ## 📖 **Documentation**
 
 ### **Code Documentation**
+
 - JavaDoc for all public APIs
 - Clear method and class names
 - Meaningful variable names
 - Comments for complex business logic
 
 ### **Architecture Documentation**
+
 - Update ADRs for significant decisions
 - Maintain README accuracy
 - Document integration patterns
@@ -247,23 +266,28 @@ Use our [Feature Request Template](.github/ISSUE_TEMPLATE/feature_request.yml) f
 ## 🔒 **Security**
 
 ### **Security Considerations**
+
 - No sensitive data in logs
 - Secure API key handling
 - Input validation and sanitization
 - Dependency vulnerability scanning
 
 ### **Reporting Security Issues**
+
 Please report security vulnerabilities privately via email rather than public issues.
 
 ## 📦 **Release Process**
 
 ### **Version Numbering**
+
 We follow [Semantic Versioning](https://semver.org/):
+
 - **Major**: Breaking changes
 - **Minor**: New features (backwards compatible)
 - **Patch**: Bug fixes
 
 ### **Release Checklist**
+
 - [ ] All tests pass
 - [ ] Documentation updated
 - [ ] CHANGELOG.md updated
@@ -273,6 +297,7 @@ We follow [Semantic Versioning](https://semver.org/):
 ## 🙏 **Recognition**
 
 Contributors are recognized in:
+
 - Git commit history
 - Release notes
 - CONTRIBUTORS.md file
