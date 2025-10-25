@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>co.personal</groupId>
+        <artifactId>ynab-syncher</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>domain</artifactId>
+    <name>Hexagonal Template - Domain</name>
+    <description>Core domain module with business logic and ports</description>
+
+    <dependencies>
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Maven Enforcer Plugin - Prevent external dependencies to maintain clean architecture -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.6.2</version>
+                <executions>
+                    <execution>
+                        <id>enforce-no-external-dependencies</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <bannedDependencies>
+                                    <searchTransitive>false</searchTransitive>
+                                    <excludes>
+                                        <!-- Ban Spring Framework -->
+                                        <exclude>org.springframework:*</exclude>
+                                        <exclude>org.springframework.boot:*</exclude>
+                                        <exclude>org.springframework.data:*</exclude>
+                                        <exclude>org.springframework.security:*</exclude>
+                                        
+                                        <!-- Ban JPA/Hibernate -->
+                                        <exclude>org.hibernate:*</exclude>
+                                        <exclude>jakarta.persistence:*</exclude>
+                                        <exclude>javax.persistence:*</exclude>
+                                        
+                                        <!-- Ban Web/HTTP libraries -->
+                                        <exclude>jakarta.servlet:*</exclude>
+                                        <exclude>javax.servlet:*</exclude>
+                                        <exclude>org.apache.httpcomponents:*</exclude>
+                                        <exclude>com.squareup.okhttp3:*</exclude>
+                                        
+                                        <!-- Ban JSON libraries -->
+                                        <exclude>com.fasterxml.jackson.core:*</exclude>
+                                        <exclude>com.google.gson:*</exclude>
+                                        
+                                        <!-- Ban logging frameworks -->
+                                        <exclude>org.slf4j:*</exclude>
+                                        <exclude>ch.qos.logback:*</exclude>
+                                        <exclude>org.apache.logging.log4j:*</exclude>
+                                        
+                                        <!-- Ban validation frameworks -->
+                                        <exclude>jakarta.validation:*</exclude>
+                                        <exclude>javax.validation:*</exclude>
+                                        <exclude>org.hibernate.validator:*</exclude>
+                                    </excludes>
+                                    <includes>
+                                        <!-- Allow test dependencies -->
+                                        <include>*:*:*:*:test</include>
+                                    </includes>
+                                    <message>
+Domain module must remain framework-free! 
+Found prohibited dependency. The domain should only contain:
+- Pure Java (java.* packages)
+- Business logic and domain models
+- Test dependencies (test scope only)
+
+Please move framework dependencies to the infrastructure module.
+                                    </message>
+                                </bannedDependencies>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            
+            <!-- PIT Mutation Testing -->
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <configuration>
+                    <targetClasses>
+                        <param>co.personal.ynabsyncher.*</param>
+                    </targetClasses>
+                    <targetTests>
+                        <param>co.personal.ynabsyncher.*</param>
+                    </targetTests>
+                    <mutationThreshold>70</mutationThreshold>
+                    <excludedMethods>
+                        <excludedMethod>toString</excludedMethod>
+                        <excludedMethod>hashCode</excludedMethod>
+                        <excludedMethod>equals</excludedMethod>
+                    </excludedMethods>
+                    <outputFormats>
+                        <outputFormat>HTML</outputFormat>
+                        <outputFormat>XML</outputFormat>
+                    </outputFormats>
+                    <timestampedReports>false</timestampedReports>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
