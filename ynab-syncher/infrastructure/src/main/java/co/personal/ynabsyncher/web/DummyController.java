@@ -1,4 +1,4 @@
-package co.personal.ynabsyncher.infrastructure.web;
+package co.personal.ynabsyncher.web;
 
 import org.springframework.stereotype.Controller;
 

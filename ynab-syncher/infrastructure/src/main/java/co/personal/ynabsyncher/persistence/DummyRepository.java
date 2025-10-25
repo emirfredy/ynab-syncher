@@ -1,4 +1,4 @@
-package co.personal.ynabsyncher.infrastructure.persistence;
+package co.personal.ynabsyncher.persistence;
 
 import org.springframework.stereotype.Repository;
 

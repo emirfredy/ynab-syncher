@@ -1,4 +1,4 @@
-package co.personal.ynabsyncher.infrastructure.config;
+package co.personal.ynabsyncher.config;
 
 import org.springframework.context.annotation.Configuration;
 
