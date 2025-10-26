@@ -51,7 +51,11 @@ public class TransactionReconciliationService {
         List<YnabTransaction> ynabTransactions,
         TransactionMatcher matcher
     ) {
-        // Sort YNAB transactions by date for efficient range searching
+        // Sort both transaction lists by date for optimal performance
+        List<BankTransaction> sortedBankTransactions = bankTransactions.stream()
+            .sorted(Comparator.comparing(BankTransaction::date))
+            .toList();
+            
         List<ReconcilableTransaction> sortedYnabTransactions = ynabTransactions.stream()
             .sorted(Comparator.comparing(YnabTransaction::date))
             .<ReconcilableTransaction>map(YnabTransactionAdapter::new)
@@ -59,15 +63,17 @@ public class TransactionReconciliationService {
 
         List<BankTransaction> matchedTransactions = new ArrayList<>();
         List<BankTransaction> missingFromYnab = new ArrayList<>();
+        Set<Integer> matchedYnabIndices = new HashSet<>(); // Track which YNAB transactions have been matched
 
-        // Process each bank transaction
-        for (BankTransaction bankTransaction : bankTransactions) {
-            boolean foundMatch = findMatchForBankTransaction(
-                bankTransaction, sortedYnabTransactions, matcher
+        // Process bank transactions in chronological order for better cache locality
+        for (BankTransaction bankTransaction : sortedBankTransactions) {
+            Integer matchedYnabIndex = findMatchForBankTransaction(
+                bankTransaction, sortedYnabTransactions, matcher, matchedYnabIndices
             );
 
-            if (foundMatch) {
+            if (matchedYnabIndex != null) {
                 matchedTransactions.add(bankTransaction);
+                matchedYnabIndices.add(matchedYnabIndex); // Mark this YNAB transaction as matched
             } else {
                 missingFromYnab.add(bankTransaction);
             }
@@ -76,10 +82,11 @@ public class TransactionReconciliationService {
         return new TransactionMatchResult(matchedTransactions, missingFromYnab);
     }
 
-    private boolean findMatchForBankTransaction(
+    private Integer findMatchForBankTransaction(
         BankTransaction bankTransaction,
         List<ReconcilableTransaction> sortedYnabTransactions,
-        TransactionMatcher matcher
+        TransactionMatcher matcher,
+        Set<Integer> matchedYnabIndices
     ) {
         ReconcilableTransaction reconcilableBankTransaction = new BankTransactionAdapter(bankTransaction);
         
@@ -89,10 +96,10 @@ public class TransactionReconciliationService {
         // Find the range of YNAB transactions within the date window
         int startIndex = findFirstTransactionInRange(sortedYnabTransactions, searchWindow.start());
         if (startIndex == -1) {
-            return false; // No transactions in date range
+            return null; // No transactions in date range
         }
 
-        // Check only transactions within the date window
+        // Check only transactions within the date window that haven't been matched yet
         for (int i = startIndex; i < sortedYnabTransactions.size(); i++) {
             ReconcilableTransaction ynabTransaction = sortedYnabTransactions.get(i);
             
@@ -101,12 +108,17 @@ public class TransactionReconciliationService {
                 break;
             }
             
+            // Skip if this YNAB transaction was already matched
+            if (matchedYnabIndices.contains(i)) {
+                continue;
+            }
+            
             if (matcher.matches(reconcilableBankTransaction, ynabTransaction)) {
-                return true; // First match wins (business rule)
+                return i; // Return the index of the matched YNAB transaction
             }
         }
 
-        return false;
+        return null; // No match found
     }
 
     private DateRange getSearchWindow(LocalDate transactionDate, ReconciliationStrategy strategy) {
