@@ -2,20 +2,18 @@ package co.personal.ynabsyncher.usecase;
 
 import co.personal.ynabsyncher.api.usecase.ReconcileTransactions;
 import co.personal.ynabsyncher.model.bank.BankTransaction;
-import co.personal.ynabsyncher.model.bank.BankTransactionAdapter;
 import co.personal.ynabsyncher.model.matcher.TransactionMatcher;
 import co.personal.ynabsyncher.model.matcher.TransactionMatcherFactory;
 import co.personal.ynabsyncher.model.reconciliation.ReconciliationRequest;
 import co.personal.ynabsyncher.model.reconciliation.ReconciliationResult;
 import co.personal.ynabsyncher.model.reconciliation.ReconciliationSummary;
-import co.personal.ynabsyncher.model.reconciliation.ReconcilableTransaction;
+import co.personal.ynabsyncher.model.reconciliation.TransactionMatchResult;
 import co.personal.ynabsyncher.model.ynab.YnabTransaction;
-import co.personal.ynabsyncher.model.ynab.YnabTransactionAdapter;
+import co.personal.ynabsyncher.service.TransactionReconciliationService;
 import co.personal.ynabsyncher.spi.repository.BankTransactionRepository;
 import co.personal.ynabsyncher.spi.repository.YnabTransactionRepository;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -27,15 +25,19 @@ public class ReconcileTransactionsUseCase implements ReconcileTransactions {
 
     private final YnabTransactionRepository ynabTransactionRepository;
     private final BankTransactionRepository bankTransactionRepository;
+    private final TransactionReconciliationService reconciliationService;
 
     public ReconcileTransactionsUseCase(
         YnabTransactionRepository ynabTransactionRepository,
-        BankTransactionRepository bankTransactionRepository
+        BankTransactionRepository bankTransactionRepository,
+        TransactionReconciliationService reconciliationService
     ) {
         this.ynabTransactionRepository = Objects.requireNonNull(ynabTransactionRepository, 
             "YNAB transaction repository cannot be null");
         this.bankTransactionRepository = Objects.requireNonNull(bankTransactionRepository, 
             "Bank transaction repository cannot be null");
+        this.reconciliationService = Objects.requireNonNull(reconciliationService,
+            "Transaction reconciliation service cannot be null");
     }
 
     @Override
@@ -62,34 +64,14 @@ public class ReconcileTransactionsUseCase implements ReconcileTransactions {
         List<BankTransaction> bankTransactions,
         TransactionMatcher matcher
     ) {
-        List<BankTransaction> matchedTransactions = new ArrayList<>();
-        List<BankTransaction> missingFromYnab = new ArrayList<>();
+        // Delegate the complex matching logic to the domain service
+        TransactionMatchResult matchResult = reconciliationService.reconcileTransactions(
+            bankTransactions,
+            ynabTransactions,
+            matcher
+        );
 
-        // Convert to reconcilable transactions for matching
-        List<ReconcilableTransaction> reconcilableYnabTransactions = ynabTransactions.stream()
-            .<ReconcilableTransaction>map(YnabTransactionAdapter::new)
-            .toList();
-
-        // For each bank transaction, try to find a matching YNAB transaction
-        // TODO: Use transactions lists ordered by date, the matching is only possible in a certain date range
-        for (BankTransaction bankTransaction : bankTransactions) {
-            boolean foundMatch = false;
-            ReconcilableTransaction reconcilableBankTransaction = new BankTransactionAdapter(bankTransaction);
-            
-            for (ReconcilableTransaction ynabTransaction : reconcilableYnabTransactions) {
-                if (matcher.matches(reconcilableBankTransaction, ynabTransaction)) {
-                    matchedTransactions.add(bankTransaction);
-                    foundMatch = true;
-                    break; // Stop looking once we find a match
-                }
-            }
-            
-            if (!foundMatch) {
-                missingFromYnab.add(bankTransaction);
-            }
-        }
-
-        // Create summary
+        // Create summary from the match results
         ReconciliationSummary summary = new ReconciliationSummary(
             request.accountId(),
             LocalDate.now(),
@@ -98,10 +80,10 @@ public class ReconcileTransactionsUseCase implements ReconcileTransactions {
             request.strategy(),
             bankTransactions.size(),
             ynabTransactions.size(),
-            matchedTransactions.size(),
-            missingFromYnab.size()
+            matchResult.getMatchedCount(),
+            matchResult.getMissingFromYnabCount()
         );
 
-        return new ReconciliationResult(missingFromYnab, matchedTransactions, summary);
+        return new ReconciliationResult(matchResult.missingFromYnab(), matchResult.matchedTransactions(), summary);
     }
 }
