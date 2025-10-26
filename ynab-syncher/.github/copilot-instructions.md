@@ -74,4 +74,27 @@ Map domain exceptions to Problem Details JSON:
 **Logging:** Domain silent; infra uses slf4j with correlation IDs (MDC)
 **Metrics:** Expose timers per use case; propagate tracing headers
 
+## Refactoring Anti-Patterns Prevention
+
+**Test-Driven Domain Design**
+
+- Write domain tests FIRST based on requirements (Red-Green-Refactor)
+- Use mutation testing to validate test quality (≥70% kill rate required)
+- Domain behaviors drive implementation, not architectural patterns
+- Never add deprecated methods in greenfield projects
+
+**Continuous Integration Validation**
+
+- ArchUnit tests enforce domain independence on every commit
+- Mutation testing validates test effectiveness in CI pipeline
+- Breaking change detection prevents API degradation
+- No premature versioning (use "Unreleased" until actual deployment)
+
+**Focused Scope Management**
+
+- Single responsibility per feature branch with clear success criteria
+- Time-boxed spikes for exploration (max 2 hours before deciding)
+- MVP mindset: simplest working solution first, evolve complexity
+- Document scope boundaries: what's IN vs OUT of current work
+
 Start with domain interfaces and models, then implement infrastructure adapters.

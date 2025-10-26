@@ -1,7 +1,6 @@
 package co.personal.ynabsyncher.usecase;
 
 import co.personal.ynabsyncher.api.usecase.ReconcileTransactions;
-import co.personal.ynabsyncher.model.*;
 import co.personal.ynabsyncher.model.bank.BankTransaction;
 import co.personal.ynabsyncher.model.bank.BankTransactionAdapter;
 import co.personal.ynabsyncher.model.matcher.TransactionMatcher;
@@ -68,11 +67,11 @@ public class ReconcileTransactionsUseCase implements ReconcileTransactions {
 
         // Convert to reconcilable transactions for matching
         List<ReconcilableTransaction> reconcilableYnabTransactions = ynabTransactions.stream()
-            .map(YnabTransactionAdapter::new)
-            .map(ReconcilableTransaction.class::cast)
+            .<ReconcilableTransaction>map(YnabTransactionAdapter::new)
             .toList();
 
         // For each bank transaction, try to find a matching YNAB transaction
+        // TODO: Use transactions lists ordered by date, the matching is only possible in a certain date range
         for (BankTransaction bankTransaction : bankTransactions) {
             boolean foundMatch = false;
             ReconcilableTransaction reconcilableBankTransaction = new BankTransactionAdapter(bankTransaction);
