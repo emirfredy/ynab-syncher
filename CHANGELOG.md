@@ -9,17 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Initial project setup with hexagonal architecture
-- Transaction reconciliation domain model
-- YNAB API integration foundation
-- Comprehensive testing suite with mutation testing
-- CI/CD pipeline with GitHub Actions
-- Professional documentation and contribution guidelines
-
-## [1.0.0] - 2024-01-XX
-
-### Added
-
 - **Core Domain Model**
 
   - `Money` value object with milliunits precision for YNAB compatibility
