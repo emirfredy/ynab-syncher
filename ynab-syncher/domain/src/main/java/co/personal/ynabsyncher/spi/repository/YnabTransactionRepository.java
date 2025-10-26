@@ -1,7 +1,7 @@
 package co.personal.ynabsyncher.spi.repository;
 
 import co.personal.ynabsyncher.model.AccountId;
-import co.personal.ynabsyncher.model.Transaction;
+import co.personal.ynabsyncher.model.ynab.YnabTransaction;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,7 +20,7 @@ public interface YnabTransactionRepository {
      * @param toDate the end date (inclusive)
      * @return list of YNAB transactions
      */
-    List<Transaction> findByAccountIdAndDateRange(AccountId accountId, LocalDate fromDate, LocalDate toDate);
+    List<YnabTransaction> findByAccountIdAndDateRange(AccountId accountId, LocalDate fromDate, LocalDate toDate);
 
     /**
      * Retrieves all YNAB transactions for a specific account.
@@ -28,5 +28,5 @@ public interface YnabTransactionRepository {
      * @param accountId the account identifier
      * @return list of all YNAB transactions for the account
      */
-    List<Transaction> findByAccountId(AccountId accountId);
+    List<YnabTransaction> findByAccountId(AccountId accountId);
 }

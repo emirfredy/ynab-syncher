@@ -2,11 +2,16 @@ package co.personal.ynabsyncher.usecase;
 
 import co.personal.ynabsyncher.api.usecase.ReconcileTransactions;
 import co.personal.ynabsyncher.model.*;
+import co.personal.ynabsyncher.model.bank.BankTransaction;
+import co.personal.ynabsyncher.model.bank.BankTransactionAdapter;
 import co.personal.ynabsyncher.model.matcher.TransactionMatcher;
 import co.personal.ynabsyncher.model.matcher.TransactionMatcherFactory;
 import co.personal.ynabsyncher.model.reconciliation.ReconciliationRequest;
 import co.personal.ynabsyncher.model.reconciliation.ReconciliationResult;
 import co.personal.ynabsyncher.model.reconciliation.ReconciliationSummary;
+import co.personal.ynabsyncher.model.reconciliation.ReconcilableTransaction;
+import co.personal.ynabsyncher.model.ynab.YnabTransaction;
+import co.personal.ynabsyncher.model.ynab.YnabTransactionAdapter;
 import co.personal.ynabsyncher.spi.repository.BankTransactionRepository;
 import co.personal.ynabsyncher.spi.repository.YnabTransactionRepository;
 
@@ -42,10 +47,10 @@ public class ReconcileTransactionsUseCase implements ReconcileTransactions {
         TransactionMatcher matcher = TransactionMatcherFactory.createMatcher(request.strategy());
 
         // Fetch transactions from both sources
-        List<Transaction> ynabTransactions = ynabTransactionRepository
+        List<YnabTransaction> ynabTransactions = ynabTransactionRepository
             .findByAccountIdAndDateRange(request.accountId(), request.fromDate(), request.toDate());
         
-        List<Transaction> bankTransactions = bankTransactionRepository
+        List<BankTransaction> bankTransactions = bankTransactionRepository
             .findByAccountIdAndDateRange(request.accountId(), request.fromDate(), request.toDate());
 
         // Reconcile transactions using the specified strategy
@@ -54,19 +59,26 @@ public class ReconcileTransactionsUseCase implements ReconcileTransactions {
 
     private ReconciliationResult performReconciliation(
         ReconciliationRequest request,
-        List<Transaction> ynabTransactions,
-        List<Transaction> bankTransactions,
+        List<YnabTransaction> ynabTransactions,
+        List<BankTransaction> bankTransactions,
         TransactionMatcher matcher
     ) {
-        List<Transaction> matchedTransactions = new ArrayList<>();
-        List<Transaction> missingFromYnab = new ArrayList<>();
+        List<BankTransaction> matchedTransactions = new ArrayList<>();
+        List<BankTransaction> missingFromYnab = new ArrayList<>();
+
+        // Convert to reconcilable transactions for matching
+        List<ReconcilableTransaction> reconcilableYnabTransactions = ynabTransactions.stream()
+            .map(YnabTransactionAdapter::new)
+            .map(ReconcilableTransaction.class::cast)
+            .toList();
 
         // For each bank transaction, try to find a matching YNAB transaction
-        for (Transaction bankTransaction : bankTransactions) {
+        for (BankTransaction bankTransaction : bankTransactions) {
             boolean foundMatch = false;
+            ReconcilableTransaction reconcilableBankTransaction = new BankTransactionAdapter(bankTransaction);
             
-            for (Transaction ynabTransaction : ynabTransactions) {
-                if (matcher.matches(bankTransaction, ynabTransaction)) {
+            for (ReconcilableTransaction ynabTransaction : reconcilableYnabTransactions) {
+                if (matcher.matches(reconcilableBankTransaction, ynabTransaction)) {
                     matchedTransactions.add(bankTransaction);
                     foundMatch = true;
                     break; // Stop looking once we find a match

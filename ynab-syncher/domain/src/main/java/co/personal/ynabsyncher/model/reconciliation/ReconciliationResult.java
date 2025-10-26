@@ -1,16 +1,17 @@
 package co.personal.ynabsyncher.model.reconciliation;
 
-import co.personal.ynabsyncher.model.Transaction;
+import co.personal.ynabsyncher.model.bank.BankTransaction;
 
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Represents the result of a transaction reconciliation process.
+ * Contains bank transactions that were matched and those missing from YNAB.
  */
 public record ReconciliationResult(
-    List<Transaction> missingFromYnab,
-    List<Transaction> matchedTransactions,
+    List<BankTransaction> missingFromYnab,
+    List<BankTransaction> matchedTransactions,
     ReconciliationSummary summary
 ) {
     public ReconciliationResult {
@@ -31,16 +32,23 @@ public record ReconciliationResult(
     }
 
     /**
-     * Returns the number of transactions that need to be added to YNAB.
+     * Returns the number of transactions that were successfully matched.
      */
-    public int getMissingTransactionCount() {
+    public int getMatchedCount() {
+        return matchedTransactions.size();
+    }
+
+    /**
+     * Returns the number of transactions missing from YNAB.
+     */
+    public int getMissingCount() {
         return missingFromYnab.size();
     }
 
     /**
-     * Returns the number of transactions that were successfully matched.
+     * Returns the total number of bank transactions processed.
      */
-    public int getMatchedTransactionCount() {
-        return matchedTransactions.size();
+    public int getTotalBankTransactions() {
+        return matchedTransactions.size() + missingFromYnab.size();
     }
 }

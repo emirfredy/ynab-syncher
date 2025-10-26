@@ -1,7 +1,7 @@
 package co.personal.ynabsyncher.spi.repository;
 
 import co.personal.ynabsyncher.model.AccountId;
-import co.personal.ynabsyncher.model.Transaction;
+import co.personal.ynabsyncher.model.bank.BankTransaction;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,9 +18,13 @@ public interface BankTransactionRepository {
      * @param accountId the account identifier
      * @param fromDate the start date (inclusive)
      * @param toDate the end date (inclusive)
-     * @return list of bank transactions
+     * @return list of bank transactions in the specified range
      */
-    List<Transaction> findByAccountIdAndDateRange(AccountId accountId, LocalDate fromDate, LocalDate toDate);
+    List<BankTransaction> findByAccountIdAndDateRange(
+        AccountId accountId, 
+        LocalDate fromDate, 
+        LocalDate toDate
+    );
 
     /**
      * Retrieves all bank transactions for a specific account.
@@ -28,5 +32,5 @@ public interface BankTransactionRepository {
      * @param accountId the account identifier
      * @return list of all bank transactions for the account
      */
-    List<Transaction> findByAccountId(AccountId accountId);
+    List<BankTransaction> findByAccountId(AccountId accountId);
 }
