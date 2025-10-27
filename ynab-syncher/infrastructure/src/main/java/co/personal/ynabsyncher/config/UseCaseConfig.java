@@ -1,10 +1,14 @@
 package co.personal.ynabsyncher.config;
 
 import co.personal.ynabsyncher.api.usecase.ReconcileTransactions;
+import co.personal.ynabsyncher.api.usecase.InferTransactionCategories;
 import co.personal.ynabsyncher.service.TransactionReconciliationService;
 import co.personal.ynabsyncher.spi.repository.BankTransactionRepository;
+import co.personal.ynabsyncher.spi.repository.YnabCategoryRepository;
 import co.personal.ynabsyncher.spi.repository.YnabTransactionRepository;
+import co.personal.ynabsyncher.service.CategoryInferenceService;
 import co.personal.ynabsyncher.usecase.ReconcileTransactionsUseCase;
+import co.personal.ynabsyncher.usecase.InferTransactionCategoriesUseCase;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -30,21 +34,56 @@ public class UseCaseConfig {
     }
 
     /**
+     * Creates the category inference domain service.
+     * 
+     * This service handles automatic category assignment for bank transactions
+     * using fuzzy matching algorithms and confidence scoring.
+     * Service is now framework-free and doesn't access repositories directly.
+     */
+    @Bean
+    public CategoryInferenceService categoryInferenceService() {
+        return new CategoryInferenceService();
+    }
+
+    /**
      * Creates the main reconciliation use case.
      * 
      * This use case orchestrates the reconciliation workflow by delegating
      * the complex matching logic to the domain service while managing
-     * repository interactions and result composition.
+     * repository interactions and result composition. Now includes category
+     * inference for uncategorized bank transactions.
      */
     @Bean
     public ReconcileTransactions reconcileTransactions(
             YnabTransactionRepository ynabTransactionRepository,
             BankTransactionRepository bankTransactionRepository,
-            TransactionReconciliationService reconciliationService) {
+            YnabCategoryRepository ynabCategoryRepository,
+            TransactionReconciliationService reconciliationService,
+            CategoryInferenceService categoryInferenceService) {
         return new ReconcileTransactionsUseCase(
             ynabTransactionRepository,
             bankTransactionRepository,
-            reconciliationService
+            ynabCategoryRepository,
+            reconciliationService,
+            categoryInferenceService
+        );
+    }
+
+    /**
+     * Creates the category inference use case.
+     * 
+     * This use case provides transaction category inference capabilities
+     * as a standalone service for API endpoints.
+     */
+    @Bean
+    public InferTransactionCategories inferTransactionCategories(
+            BankTransactionRepository bankTransactionRepository,
+            YnabCategoryRepository ynabCategoryRepository,
+            CategoryInferenceService categoryInferenceService) {
+        return new InferTransactionCategoriesUseCase(
+            bankTransactionRepository,
+            ynabCategoryRepository,
+            categoryInferenceService
         );
     }
 }

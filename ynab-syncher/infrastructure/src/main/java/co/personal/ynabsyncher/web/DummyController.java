@@ -1,8 +1,16 @@
 package co.personal.ynabsyncher.web;
 
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+/**
+ * Dummy controller for initial setup - to be replaced with actual controllers.
+ */
+@RestController
 public class DummyController {
-    // Minimal stub for ArchUnit
+
+    @GetMapping("/health")
+    public String health() {
+        return "OK";
+    }
 }

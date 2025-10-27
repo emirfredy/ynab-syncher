@@ -274,4 +274,62 @@ class ArchitectureTest {
         //     // Test classes should mirror the package structure of production code
         // }
     }
+
+    @Nested
+    @DisplayName("Enhanced Contract Validation")
+    class ContractValidation {
+
+        @Test
+        @DisplayName("Repository interfaces should not expose infrastructure details")
+        void repositoryInterfacesShouldNotExposeInfrastructureDetails() {
+            ArchRule rule = noClasses()
+                    .that().resideInAPackage("..spi.repository..")
+                    .and().areInterfaces()
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                        "org.springframework..", 
+                        "jakarta.persistence..", 
+                        "org.hibernate.."
+                    )
+                    .as("Repository interfaces should not expose infrastructure details");
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("SPI ports should only be accessed by use cases and infrastructure")
+        void spiPortsShouldOnlyBeAccessedByUseCasesAndInfrastructure() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..spi..")
+                    .should().onlyBeAccessed().byClassesThat().resideInAnyPackage(
+                        "..usecase..", 
+                        "..infrastructure..", 
+                        "..spi.."
+                    )
+                    .as("SPI ports should only be accessed by use cases and infrastructure adapters");
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Domain services should not depend on use cases")
+        void domainServicesShouldNotDependOnUseCases() {
+            ArchRule rule = noClasses()
+                    .that().resideInAPackage("..service..")
+                    .should().dependOnClassesThat().resideInAPackage("..usecase..")
+                    .as("Domain services should not depend on use cases (wrong direction)");
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("API DTOs should not be used in domain services")
+        void apiDtosShouldNotBeUsedInDomainServices() {
+            ArchRule rule = noClasses()
+                    .that().resideInAPackage("..service..")
+                    .should().dependOnClassesThat().resideInAPackage("..api.dto..")
+                    .as("Domain services should use domain models, not API DTOs");
+
+            rule.check(allClasses);
+        }
+    }
 }

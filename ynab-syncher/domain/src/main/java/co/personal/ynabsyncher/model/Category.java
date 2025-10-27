@@ -48,6 +48,15 @@ public record Category(
     }
 
     /**
+     * Creates a category from YNAB group and category names for inference results.
+     */
+    public static Category of(String groupName, String categoryName) {
+        String fullName = groupName + ": " + categoryName;
+        String id = (groupName + "_" + categoryName).toLowerCase().replaceAll("\\s+", "_");
+        return new Category(id, fullName, CategoryType.YNAB_ASSIGNED);
+    }
+
+    /**
      * Checks if this category was explicitly assigned (YNAB) vs inferred (Bank).
      */
     public boolean isExplicitlyAssigned() {
