@@ -28,14 +28,7 @@ public record CategoryInferenceResultDto(
             domainResult.reasoning()
         );
     }
-    
-    /**
-     * Converts to domain model.
-     */
-    public co.personal.ynabsyncher.model.CategoryInferenceResult toDomain() {
-        return new co.personal.ynabsyncher.model.CategoryInferenceResult(category, confidence, reasoning);
-    }
-    
+
     public static CategoryInferenceResultDto noMatch() {
         return new CategoryInferenceResultDto(Category.unknown(), 0.0, "No suitable match found");
     }
@@ -43,8 +36,5 @@ public record CategoryInferenceResultDto(
     public boolean hasMatch() {
         return !category.equals(Category.unknown());
     }
-    
-    public boolean isHighConfidence() {
-        return confidence >= 0.8;
-    }
+
 }

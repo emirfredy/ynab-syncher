@@ -1032,7 +1032,6 @@ class InferTransactionCategoriesUseCaseFunctionalTest {
             TransactionCategoryResult result = response.results().get(0);
             assertThat(result.successful()).isTrue();
             assertThat(result.inferenceResult().confidence()).isEqualTo(0.1);
-            assertThat(result.inferenceResult().isHighConfidence()).isFalse();
         }
 
         @Test
