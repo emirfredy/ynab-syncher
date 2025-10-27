@@ -2,8 +2,10 @@ package co.personal.ynabsyncher.config;
 
 import co.personal.ynabsyncher.api.usecase.ReconcileTransactions;
 import co.personal.ynabsyncher.api.usecase.InferTransactionCategories;
+import co.personal.ynabsyncher.persistence.InMemoryCategoryMappingRepository;
 import co.personal.ynabsyncher.service.TransactionReconciliationService;
 import co.personal.ynabsyncher.spi.repository.BankTransactionRepository;
+import co.personal.ynabsyncher.spi.repository.CategoryMappingRepository;
 import co.personal.ynabsyncher.spi.repository.YnabCategoryRepository;
 import co.personal.ynabsyncher.spi.repository.YnabTransactionRepository;
 import co.personal.ynabsyncher.service.CategoryInferenceService;
@@ -46,6 +48,17 @@ public class UseCaseConfig {
     }
 
     /**
+     * Creates the category mapping repository.
+     * 
+     * In-memory implementation for testing and initial development.
+     * In production, this would be replaced with a database implementation.
+     */
+    @Bean
+    public CategoryMappingRepository categoryMappingRepository() {
+        return new InMemoryCategoryMappingRepository();
+    }
+
+    /**
      * Creates the main reconciliation use case.
      * 
      * This use case orchestrates the reconciliation workflow by delegating
@@ -73,16 +86,19 @@ public class UseCaseConfig {
      * Creates the category inference use case.
      * 
      * This use case provides transaction category inference capabilities
-     * as a standalone service for API endpoints.
+     * as a standalone service for API endpoints. Now supports learned mappings
+     * for improved accuracy over time.
      */
     @Bean
     public InferTransactionCategories inferTransactionCategories(
             BankTransactionRepository bankTransactionRepository,
             YnabCategoryRepository ynabCategoryRepository,
+            CategoryMappingRepository categoryMappingRepository,
             CategoryInferenceService categoryInferenceService) {
         return new InferTransactionCategoriesUseCase(
             bankTransactionRepository,
             ynabCategoryRepository,
+            categoryMappingRepository,
             categoryInferenceService
         );
     }

@@ -5,9 +5,12 @@ import co.personal.ynabsyncher.api.dto.CategoryInferenceResponse;
 import co.personal.ynabsyncher.api.dto.CategoryInferenceResponse.TransactionCategoryResult;
 import co.personal.ynabsyncher.api.dto.CategoryInferenceResultDto;
 import co.personal.ynabsyncher.api.usecase.InferTransactionCategories;
+import co.personal.ynabsyncher.model.CategoryMapping;
+import co.personal.ynabsyncher.model.TransactionPattern;
 import co.personal.ynabsyncher.model.bank.BankTransaction;
 import co.personal.ynabsyncher.model.ynab.YnabCategory;
 import co.personal.ynabsyncher.spi.repository.BankTransactionRepository;
+import co.personal.ynabsyncher.spi.repository.CategoryMappingRepository;
 import co.personal.ynabsyncher.spi.repository.YnabCategoryRepository;
 import co.personal.ynabsyncher.service.CategoryInferenceService;
 
@@ -20,6 +23,7 @@ import java.util.Optional;
  * 
  * Responsibility: Infer categories for bank transactions without persistence.
  * This is a read-only operation that provides inference results for downstream processes.
+ * Uses learned mappings first, then falls back to similarity matching.
  * 
  * Architecture note: Since BankTransactionRepository is read-only (external data source),
  * this use case only performs inference and returns results without saving anything.
@@ -28,14 +32,17 @@ public class InferTransactionCategoriesUseCase implements InferTransactionCatego
     
     private final BankTransactionRepository bankTransactionRepository;
     private final YnabCategoryRepository ynabCategoryRepository;
+    private final CategoryMappingRepository categoryMappingRepository;
     private final CategoryInferenceService categoryInferenceService;
     
     public InferTransactionCategoriesUseCase(
             BankTransactionRepository bankTransactionRepository,
             YnabCategoryRepository ynabCategoryRepository,
+            CategoryMappingRepository categoryMappingRepository,
             CategoryInferenceService categoryInferenceService) {
         this.bankTransactionRepository = bankTransactionRepository;
         this.ynabCategoryRepository = ynabCategoryRepository;
+        this.categoryMappingRepository = categoryMappingRepository;
         this.categoryInferenceService = categoryInferenceService;
     }
     
@@ -63,9 +70,12 @@ public class InferTransactionCategoriesUseCase implements InferTransactionCatego
                 var dtoResult = createInferenceResultFromTransaction(transaction);
                 results.add(TransactionCategoryResult.success(transaction.id(), dtoResult));
             } else {
-                // Needs inference - pass categories to service
+                // Needs inference - get learned mappings and pass to service
+                TransactionPattern pattern = TransactionPattern.fromBankTransaction(transaction);
+                List<CategoryMapping> learnedMappings = categoryMappingRepository.findMappingsForPattern(pattern);
+                
                 Optional<co.personal.ynabsyncher.model.CategoryInferenceResult> inferenceResult = 
-                        categoryInferenceService.analyzeTransaction(transaction, availableCategories);
+                        categoryInferenceService.analyzeTransaction(transaction, availableCategories, learnedMappings);
                 
                 if (inferenceResult.isPresent() && inferenceResult.get().hasMatch()) {
                     var dtoResult = CategoryInferenceResultDto.fromDomain(inferenceResult.get());
