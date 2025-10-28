@@ -8,7 +8,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Repository interface for retrieving bank transactions. It won't provide writing operations
+ * Repository interface for retrieving bank transactions from external data sources.
+ * This is a read-only interface - no writing operations are provided as transactions
+ * are processed in-memory and not persisted through this repository.
  * This is an outbound port in the hexagonal architecture.
  */
 public interface BankTransactionRepository {
