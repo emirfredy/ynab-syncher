@@ -316,7 +316,8 @@ class ArchitectureTest {
             ArchRule rule = noClasses()
                     .that().resideInAPackage("..service..")
                     .should().dependOnClassesThat().resideInAPackage("..usecase..")
-                    .as("Domain services should not depend on use cases (wrong direction)");
+                    .as("Domain services should not depend on use cases (wrong direction)")
+                    .allowEmptyShould(true); // Allow empty check since we use use cases directly
 
             rule.check(allClasses);
         }
@@ -327,7 +328,8 @@ class ArchitectureTest {
             ArchRule rule = noClasses()
                     .that().resideInAPackage("..service..")
                     .should().dependOnClassesThat().resideInAPackage("..api.dto..")
-                    .as("Domain services should use domain models, not API DTOs");
+                    .as("Domain services should use domain models, not API DTOs")
+                    .allowEmptyShould(true); // Allow empty check since we use use cases directly
 
             rule.check(allClasses);
         }
