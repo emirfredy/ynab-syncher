@@ -1,0 +1,98 @@
+{
+  "data": {
+    "category_groups": [
+      {
+        "id": "5fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "name": "Monthly Bills",
+        "hidden": false,
+        "deleted": false,
+        "categories": [
+          {
+            "id": "6fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "category_group_id": "5fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "category_group_name": "Monthly Bills",
+            "name": "Electric",
+            "hidden": false,
+            "original_category_group_id": null,
+            "note": null,
+            "budgeted": 120000,
+            "activity": -85000,
+            "balance": 35000,
+            "goal_type": null,
+            "goal_day": null,
+            "goal_cadence": null,
+            "goal_cadence_frequency": null,
+            "goal_creation_month": null,
+            "goal_target": null,
+            "goal_target_month": null,
+            "goal_percentage_complete": null,
+            "goal_months_to_budget": null,
+            "goal_under_funded": null,
+            "goal_overall_funded": null,
+            "goal_overall_left": null,
+            "deleted": false
+          },
+          {
+            "id": "dfa85f64-5717-4562-b3fc-2c963f66afa6",
+            "category_group_id": "5fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "category_group_name": "Monthly Bills",
+            "name": "Internet",
+            "hidden": false,
+            "original_category_group_id": null,
+            "note": null,
+            "budgeted": 75000,
+            "activity": -75000,
+            "balance": 0,
+            "goal_type": null,
+            "goal_day": null,
+            "goal_cadence": null,
+            "goal_cadence_frequency": null,
+            "goal_creation_month": null,
+            "goal_target": null,
+            "goal_target_month": null,
+            "goal_percentage_complete": null,
+            "goal_months_to_budget": null,
+            "goal_under_funded": null,
+            "goal_overall_funded": null,
+            "goal_overall_left": null,
+            "deleted": false
+          }
+        ]
+      },
+      {
+        "id": "efa85f64-5717-4562-b3fc-2c963f66afa6",
+        "name": "Everyday Expenses",
+        "hidden": false,
+        "deleted": false,
+        "categories": [
+          {
+            "id": "ffa85f64-5717-4562-b3fc-2c963f66afa6",
+            "category_group_id": "efa85f64-5717-4562-b3fc-2c963f66afa6",
+            "category_group_name": "Everyday Expenses",
+            "name": "Groceries",
+            "hidden": false,
+            "original_category_group_id": null,
+            "note": null,
+            "budgeted": 400000,
+            "activity": -275000,
+            "balance": 125000,
+            "goal_type": "TB",
+            "goal_day": null,
+            "goal_cadence": 1,
+            "goal_cadence_frequency": null,
+            "goal_creation_month": "2024-01-01",
+            "goal_target": 400000,
+            "goal_target_month": null,
+            "goal_percentage_complete": 100,
+            "goal_months_to_budget": null,
+            "goal_under_funded": null,
+            "goal_overall_funded": null,
+            "goal_overall_left": null,
+            "deleted": false
+          }
+        ]
+      }
+    ],
+    "server_knowledge": 150
+  }
+}

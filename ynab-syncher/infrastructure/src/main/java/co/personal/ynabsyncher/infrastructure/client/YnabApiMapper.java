@@ -48,10 +48,60 @@ public class YnabApiMapper {
                 dto.getId(),
                 dto.getName(),
                 OffsetDateTime.parse(dto.getLastModifiedOn()),
-                dto.getFirstMonth() != null ? OffsetDateTime.parse(dto.getFirstMonth()) : null,
-                dto.getLastMonth() != null ? OffsetDateTime.parse(dto.getLastMonth()) : null,
-                dto.getCurrencyFormat()
+                parseFirstMonth(dto.getFirstMonth()),
+                parseLastMonth(dto.getLastMonth()),
+                convertCurrencyFormatToString(dto.getCurrencyFormat())
         );
+    }
+
+    /**
+     * Parses first month from YNAB API. These are date strings like "2017-11-01".
+     */
+    private OffsetDateTime parseFirstMonth(String firstMonth) {
+        if (firstMonth == null) {
+            return null;
+        }
+        // Convert date string to first day of month at start of day in UTC
+        LocalDate date = LocalDate.parse(firstMonth);
+        return date.atStartOfDay().atOffset(java.time.ZoneOffset.UTC);
+    }
+
+    /**
+     * Parses last month from YNAB API. These are date strings like "2024-11-01".
+     */
+    private OffsetDateTime parseLastMonth(String lastMonth) {
+        if (lastMonth == null) {
+            return null;
+        }
+        // Convert date string to first day of month at start of day in UTC
+        LocalDate date = LocalDate.parse(lastMonth);
+        return date.atStartOfDay().atOffset(java.time.ZoneOffset.UTC);
+    }
+
+    /**
+     * Converts currency format object to a string representation.
+     * If the currency format is already a string, returns it as-is.
+     * If it's an object, extracts the ISO code as the string representation.
+     */
+    private String convertCurrencyFormatToString(Object currencyFormat) {
+        if (currencyFormat == null) {
+            return "USD"; // Default fallback
+        }
+        
+        if (currencyFormat instanceof String) {
+            return (String) currencyFormat;
+        }
+        
+        // Handle currency format object by extracting ISO code
+        if (currencyFormat instanceof java.util.Map) {
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> currencyMap = (java.util.Map<String, Object>) currencyFormat;
+            Object isoCode = currencyMap.get("iso_code");
+            return isoCode != null ? isoCode.toString() : "USD";
+        }
+        
+        // Fallback to string representation
+        return currencyFormat.toString();
     }
 
     /**
@@ -100,11 +150,23 @@ public class YnabApiMapper {
                 fromMilliunits(dto.getAmount()),
                 dto.getPayeeName(),
                 dto.getMemo(),
-                new Category(dto.getCategoryId(), dto.getCategoryName(), CategoryType.YNAB_ASSIGNED),
+                createCategory(dto.getCategoryId(), dto.getCategoryName()),
                 mapClearedStatus(dto.getCleared()),
                 dto.isApproved(),
                 dto.getFlagColor()
         );
+    }
+
+    /**
+     * Creates a category from YNAB transaction data.
+     * Handles null category IDs for uncategorized transactions like transfers.
+     */
+    private Category createCategory(String categoryId, String categoryName) {
+        if (categoryId == null) {
+            // Use a default category for uncategorized transactions (like transfers)
+            return new Category("uncategorized", "Uncategorized", CategoryType.YNAB_ASSIGNED);
+        }
+        return new Category(categoryId, categoryName, CategoryType.YNAB_ASSIGNED);
     }
 
     /**

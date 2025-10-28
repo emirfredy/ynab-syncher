@@ -80,6 +80,14 @@
             <version>${archunit.version}</version>
             <scope>test</scope>
         </dependency>
+        
+        <!-- WireMock for HTTP stubbing -->
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock-jre8-standalone</artifactId>
+            <version>2.35.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

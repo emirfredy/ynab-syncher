@@ -1,19 +1,26 @@
 package co.personal.ynabsyncher.infrastructure.client.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * YNAB API Transaction DTO for JSON serialization/deserialization.
  */
 public class YnabTransactionDto {
     private String id;
+    @JsonProperty("account_id")
     private String accountId;
+    @JsonProperty("category_id")
     private String categoryId;
+    @JsonProperty("category_name")
     private String categoryName;
+    @JsonProperty("payee_name")
     private String payeeName;
     private String date;
     private long amount;
     private String memo;
     private String cleared;
     private boolean approved;
+    @JsonProperty("flag_color")
     private String flagColor;
 
     // Getters and setters

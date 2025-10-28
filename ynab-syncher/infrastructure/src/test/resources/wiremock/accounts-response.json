@@ -1,0 +1,58 @@
+{
+  "data": {
+    "accounts": [
+      {
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "name": "Checking Account",
+        "type": "checking",
+        "on_budget": true,
+        "closed": false,
+        "note": null,
+        "balance": 15430000,
+        "cleared_balance": 15430000,
+        "uncleared_balance": 0,
+        "transfer_payee_id": "4fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "direct_import_linked": false,
+        "direct_import_in_error": false,
+        "last_reconciled_at": null,
+        "debt_original_balance": null,
+        "deleted": false
+      },
+      {
+        "id": "9fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "name": "Savings Account",
+        "type": "savings",
+        "on_budget": true,
+        "closed": false,
+        "note": "Emergency fund",
+        "balance": 500000000,
+        "cleared_balance": 500000000,
+        "uncleared_balance": 0,
+        "transfer_payee_id": "afa85f64-5717-4562-b3fc-2c963f66afa6",
+        "direct_import_linked": false,
+        "direct_import_in_error": false,
+        "last_reconciled_at": null,
+        "debt_original_balance": null,
+        "deleted": false
+      },
+      {
+        "id": "bfa85f64-5717-4562-b3fc-2c963f66afa6",
+        "name": "Credit Card",
+        "type": "creditCard",
+        "on_budget": true,
+        "closed": false,
+        "note": null,
+        "balance": -120000,
+        "cleared_balance": -120000,
+        "uncleared_balance": 0,
+        "transfer_payee_id": "cfa85f64-5717-4562-b3fc-2c963f66afa6",
+        "direct_import_linked": true,
+        "direct_import_in_error": false,
+        "last_reconciled_at": "2024-11-01T00:00:00.000Z",
+        "debt_original_balance": null,
+        "deleted": false
+      }
+    ],
+    "server_knowledge": 150
+  }
+}

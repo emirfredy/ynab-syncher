@@ -184,7 +184,9 @@ public class YnabApiClientImpl implements YnabApiClient {
     @Override
     public List<YnabTransaction> getTransactionsSince(String budgetId, OffsetDateTime sinceDate) {
         validateBudgetId(budgetId);
-        Objects.requireNonNull(sinceDate, "Since date cannot be null");
+        if (sinceDate == null) {
+            throw new IllegalArgumentException("Since date cannot be null");
+        }
         
         String formattedDate = sinceDate.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         
@@ -236,7 +238,9 @@ public class YnabApiClientImpl implements YnabApiClient {
     @Override
     public YnabTransaction createTransaction(String budgetId, YnabTransaction transaction) {
         validateBudgetId(budgetId);
-        Objects.requireNonNull(transaction, "Transaction cannot be null");
+        if (transaction == null) {
+            throw new IllegalArgumentException("Transaction cannot be null");
+        }
         
         return executeWithCorrelation("createTransaction", () -> {
             logger.debug("Creating transaction in budget: {} for account: {}", budgetId, transaction.accountId());
@@ -264,7 +268,9 @@ public class YnabApiClientImpl implements YnabApiClient {
     public YnabTransaction updateTransaction(String budgetId, String transactionId, YnabTransaction transaction) {
         validateBudgetId(budgetId);
         validateTransactionId(transactionId);
-        Objects.requireNonNull(transaction, "Transaction cannot be null");
+        if (transaction == null) {
+            throw new IllegalArgumentException("Transaction cannot be null");
+        }
         
         return executeWithCorrelation("updateTransaction", () -> {
             logger.debug("Updating transaction: {} in budget: {}", transactionId, budgetId);

@@ -434,7 +434,11 @@ class ArchitectureTest {
                         "..infrastructure..", // Can access other infrastructure classes
                         "..spi..", // Should access domain through SPI
                         "..api.error..", // Can access domain errors
-                        "..model.." // Allow access to domain models for mapping
+                        "..model..", // Allow access to domain models for mapping
+                        "org.junit..", // Allow test frameworks for test classes
+                        "org.assertj..", // Allow test frameworks for test classes
+                        "org.mockito..", // Allow test frameworks for test classes
+                        "com.github.tomakehurst.wiremock.." // Allow WireMock for test classes
                     )
                     .as("Non-config infrastructure should access domain through SPI contracts");
 

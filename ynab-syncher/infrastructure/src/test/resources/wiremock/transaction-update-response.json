@@ -1,0 +1,30 @@
+{
+  "data": {
+    "transaction": {
+      "id": "8fb85f64-5717-4562-b3fc-2c963f66afa6",
+      "date": "2024-11-05",
+      "amount": -55000,
+      "memo": "Coffee shop - Updated amount",
+      "cleared": "cleared",
+      "approved": true,
+      "flag_color": "yellow",
+      "flag_name": "Follow up",
+      "account_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "account_name": "Checking Account",
+      "payee_id": "9fb85f64-5717-4562-b3fc-2c963f66afa6",
+      "payee_name": "Coffee Shop",
+      "category_id": "afb85f64-5717-4562-b3fc-2c963f66afa6",
+      "category_name": "Dining Out",
+      "transfer_account_id": null,
+      "transfer_transaction_id": null,
+      "matched_transaction_id": null,
+      "import_id": null,
+      "import_payee_name": null,
+      "import_payee_name_original": null,
+      "debt_transaction_type": null,
+      "deleted": false,
+      "subtransactions": []
+    },
+    "server_knowledge": 157
+  }
+}

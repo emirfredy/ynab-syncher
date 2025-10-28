@@ -1,0 +1,159 @@
+{
+  "data": {
+    "budgets": [
+      {
+        "id": "6ee704d9-ee24-4c36-b1a6-cb8ccf6a216c",
+        "name": "My Budget",
+        "last_modified_on": "2017-12-01T12:40:37.867Z",
+        "first_month": "2017-11-01",
+        "last_month": "2024-11-01",
+        "date_format": {
+          "format": "MM/DD/YYYY"
+        },
+        "currency_format": {
+          "iso_code": "USD",
+          "example_format": "123,456.78",
+          "decimal_digits": 2,
+          "decimal_separator": ".",
+          "symbol_first": true,
+          "group_separator": ",",
+          "currency_symbol": "$",
+          "display_symbol": true
+        },
+        "accounts": [
+          {
+            "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "name": "Checking Account",
+            "type": "checking",
+            "on_budget": true,
+            "closed": false,
+            "note": null,
+            "balance": 15430000,
+            "cleared_balance": 15430000,
+            "uncleared_balance": 0,
+            "transfer_payee_id": "4fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "direct_import_linked": false,
+            "direct_import_in_error": false,
+            "last_reconciled_at": null,
+            "debt_original_balance": null,
+            "deleted": false
+          }
+        ],
+        "payees": [
+          {
+            "id": "4fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "name": "Transfer : Checking Account",
+            "transfer_account_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "deleted": false
+          }
+        ],
+        "payee_locations": [],
+        "category_groups": [
+          {
+            "id": "5fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "name": "Monthly Bills",
+            "hidden": false,
+            "deleted": false
+          }
+        ],
+        "categories": [
+          {
+            "id": "6fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "category_group_id": "5fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "category_group_name": "Monthly Bills",
+            "name": "Electric",
+            "hidden": false,
+            "original_category_group_id": null,
+            "note": null,
+            "budgeted": 0,
+            "activity": 0,
+            "balance": 0,
+            "goal_type": null,
+            "goal_day": null,
+            "goal_cadence": null,
+            "goal_cadence_frequency": null,
+            "goal_creation_month": null,
+            "goal_target": null,
+            "goal_target_month": null,
+            "goal_percentage_complete": null,
+            "goal_months_to_budget": null,
+            "goal_under_funded": null,
+            "goal_overall_funded": null,
+            "goal_overall_left": null,
+            "deleted": false
+          }
+        ],
+        "months": [
+          {
+            "month": "2024-11-01",
+            "note": null,
+            "income": 0,
+            "budgeted": 0,
+            "activity": 0,
+            "to_be_budgeted": 0,
+            "age_of_money": null,
+            "deleted": false,
+            "categories": [
+              {
+                "id": "6fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "category_group_id": "5fa85f64-5717-4562-b3fc-2c963f66afa6",
+                "category_group_name": "Monthly Bills",
+                "name": "Electric",
+                "hidden": false,
+                "original_category_group_id": null,
+                "note": null,
+                "budgeted": 0,
+                "activity": 0,
+                "balance": 0,
+                "goal_type": null,
+                "goal_day": null,
+                "goal_cadence": null,
+                "goal_cadence_frequency": null,
+                "goal_creation_month": null,
+                "goal_target": null,
+                "goal_target_month": null,
+                "goal_percentage_complete": null,
+                "goal_months_to_budget": null,
+                "goal_under_funded": null,
+                "goal_overall_funded": null,
+                "goal_overall_left": null,
+                "deleted": false
+              }
+            ]
+          }
+        ],
+        "transactions": [
+          {
+            "id": "7fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "date": "2024-11-01",
+            "amount": -85000,
+            "memo": "Electric bill payment",
+            "cleared": "cleared",
+            "approved": true,
+            "flag_color": null,
+            "flag_name": null,
+            "account_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "account_name": "Checking Account",
+            "payee_id": "8fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "payee_name": "Electric Company",
+            "category_id": "6fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "category_name": "Electric",
+            "transfer_account_id": null,
+            "transfer_transaction_id": null,
+            "matched_transaction_id": null,
+            "import_id": null,
+            "import_payee_name": null,
+            "import_payee_name_original": null,
+            "debt_transaction_type": null,
+            "deleted": false,
+            "subtransactions": []
+          }
+        ],
+        "subtransactions": [],
+        "scheduled_transactions": [],
+        "scheduled_subtransactions": []
+      }
+    ],
+    "server_knowledge": 150
+  }
+}
