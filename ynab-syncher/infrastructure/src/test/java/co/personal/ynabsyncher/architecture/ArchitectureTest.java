@@ -334,4 +334,135 @@ class ArchitectureTest {
             rule.check(allClasses);
         }
     }
+
+    @Nested
+    @DisplayName("Infrastructure Package Organization")
+    class InfrastructurePackageOrganization {
+
+        @Test
+        @DisplayName("Infrastructure classes should be properly organized by adapter type")
+        void infrastructureClassesShouldBeProperlyOrganizedByAdapterType() {
+            // Web adapters (inbound) should be in web package
+            ArchRule webAdaptersRule = classes()
+                    .that().areAnnotatedWith("org.springframework.web.bind.annotation.RestController")
+                    .or().areAnnotatedWith("org.springframework.stereotype.Controller")
+                    .should().resideInAPackage("..infrastructure.web..")
+                    .as("Web controllers should be in infrastructure.web package")
+                    .allowEmptyShould(true);
+
+            webAdaptersRule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Repository adapters should be in persistence package")
+        void repositoryAdaptersShouldBeInPersistencePackage() {
+            ArchRule repositoryAdaptersRule = classes()
+                    .that().haveSimpleNameEndingWith("RepositoryAdapter")
+                    .should().resideInAPackage("..infrastructure.persistence..")
+                    .as("Repository adapters should be in infrastructure.persistence package");
+
+            repositoryAdaptersRule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("External client adapters should be in client package")
+        void externalClientAdaptersShouldBeInClientPackage() {
+            ArchRule clientAdaptersRule = classes()
+                    .that().haveSimpleNameContaining("ApiClient")
+                    .and().areNotInterfaces() // Exclude domain SPI interfaces
+                    .or().haveSimpleNameContaining("ApiMapper")
+                    .should().resideInAPackage("..infrastructure.client..")
+                    .as("External API client implementations should be in infrastructure.client package");
+
+            clientAdaptersRule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Spring configuration should be in config package")
+        void springConfigurationShouldBeInConfigPackage() {
+            ArchRule configRule = classes()
+                    .that().areAnnotatedWith("org.springframework.context.annotation.Configuration")
+                    .should().resideInAPackage("..infrastructure.config..")
+                    .as("Spring configurations should be in infrastructure.config package");
+
+            configRule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("In-memory implementations should be in memory package")
+        void inMemoryImplementationsShouldBeInMemoryPackage() {
+            ArchRule memoryRule = classes()
+                    .that().haveSimpleNameStartingWith("InMemory")
+                    .should().resideInAPackage("..infrastructure.memory..")
+                    .as("In-memory implementations should be in infrastructure.memory package");
+
+            memoryRule.check(allClasses);
+        }
+    }
+
+    @Nested
+    @DisplayName("Infrastructure Dependency Rules")
+    class InfrastructureDependencyRules {
+
+        @Test
+        @DisplayName("Infrastructure should not depend on other infrastructure modules")
+        void infrastructureShouldNotDependOnOtherInfrastructureModules() {
+            ArchRule rule = noClasses()
+                    .that().resideInAPackage("..infrastructure.web..")
+                    .should().dependOnClassesThat().resideInAPackage("..infrastructure.persistence..")
+                    .orShould().dependOnClassesThat().resideInAPackage("..infrastructure.client..")
+                    .as("Infrastructure adapters should not depend on each other directly");
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Non-config infrastructure should only access domain through SPI contracts")
+        void nonConfigInfrastructureShouldOnlyAccessDomainThroughSPIContracts() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..infrastructure.client..")
+                    .or().resideInAPackage("..infrastructure.persistence..")
+                    .or().resideInAPackage("..infrastructure.web..")
+                    .or().resideInAPackage("..infrastructure.memory..")
+                    .should().onlyAccessClassesThat()
+                    .resideInAnyPackage(
+                        "java..",
+                        "org.springframework..",
+                        "jakarta..",
+                        "javax..",
+                        "org.slf4j..",
+                        "..infrastructure..", // Can access other infrastructure classes
+                        "..spi..", // Should access domain through SPI
+                        "..api.error..", // Can access domain errors
+                        "..model.." // Allow access to domain models for mapping
+                    )
+                    .as("Non-config infrastructure should access domain through SPI contracts");
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("DTOs should be collocated with their adapters")
+        void dtosShouldBeCollocatedWithTheirAdapters() {
+            ArchRule webDtosRule = classes()
+                    .that().haveSimpleNameEndingWith("RequestDto")
+                    .or().haveSimpleNameEndingWith("ResponseDto")
+                    .should().resideInAPackage("..infrastructure.web.dto..")
+                    .as("Web DTOs should be in infrastructure.web.dto package")
+                    .allowEmptyShould(true);
+
+            ArchRule apiDtosRule = classes()
+                    .that().haveSimpleNameContaining("Ynab")
+                    .and().haveSimpleNameEndingWith("Dto")
+                    .or().haveSimpleNameContaining("Ynab")
+                    .and().haveSimpleNameEndingWith("Response")
+                    .or().haveSimpleNameContaining("Ynab")
+                    .and().haveSimpleNameEndingWith("Request")
+                    .should().resideInAPackage("..infrastructure.client.dto..")
+                    .as("YNAB API DTOs should be in infrastructure.client.dto package");
+
+            webDtosRule.check(allClasses);
+            apiDtosRule.check(allClasses);
+        }
+    }
 }

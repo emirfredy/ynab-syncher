@@ -1,12 +1,13 @@
 package co.personal.ynabsyncher.infrastructure.client;
 
 import co.personal.ynabsyncher.api.error.YnabApiException;
+import co.personal.ynabsyncher.infrastructure.client.dto.*;
 import co.personal.ynabsyncher.model.ynab.YnabAccount;
 import co.personal.ynabsyncher.model.ynab.YnabBudget;
 import co.personal.ynabsyncher.model.ynab.YnabCategory;
 import co.personal.ynabsyncher.model.ynab.YnabTransaction;
 import co.personal.ynabsyncher.spi.client.YnabApiClient;
-import co.personal.ynabsyncher.infrastructure.client.dto.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;

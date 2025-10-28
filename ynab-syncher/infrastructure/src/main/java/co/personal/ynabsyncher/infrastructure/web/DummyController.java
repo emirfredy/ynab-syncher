@@ -1,4 +1,4 @@
-package co.personal.ynabsyncher.web;
+package co.personal.ynabsyncher.infrastructure.web;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

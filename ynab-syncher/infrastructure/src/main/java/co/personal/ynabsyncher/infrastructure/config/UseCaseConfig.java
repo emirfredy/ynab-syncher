@@ -1,8 +1,8 @@
-package co.personal.ynabsyncher.config;
+package co.personal.ynabsyncher.infrastructure.config;
 
 import co.personal.ynabsyncher.api.usecase.ReconcileTransactions;
+import co.personal.ynabsyncher.infrastructure.memory.InMemoryCategoryMappingRepository;
 import co.personal.ynabsyncher.api.usecase.InferTransactionCategories;
-import co.personal.ynabsyncher.persistence.InMemoryCategoryMappingRepository;
 import co.personal.ynabsyncher.service.TransactionReconciliationService;
 import co.personal.ynabsyncher.spi.repository.BankTransactionRepository;
 import co.personal.ynabsyncher.spi.repository.CategoryMappingRepository;

@@ -1,4 +1,4 @@
-package co.personal.ynabsyncher.persistence;
+package co.personal.ynabsyncher.infrastructure.memory;
 
 import co.personal.ynabsyncher.model.Category;
 import co.personal.ynabsyncher.model.CategoryMapping;

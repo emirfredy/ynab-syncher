@@ -1,5 +1,6 @@
 package co.personal.ynabsyncher.infrastructure.client;
 
+import co.personal.ynabsyncher.infrastructure.client.dto.*;
 import co.personal.ynabsyncher.model.AccountId;
 import co.personal.ynabsyncher.model.Category;
 import co.personal.ynabsyncher.model.CategoryType;
@@ -10,7 +11,7 @@ import co.personal.ynabsyncher.model.ynab.YnabAccount;
 import co.personal.ynabsyncher.model.ynab.YnabBudget;
 import co.personal.ynabsyncher.model.ynab.YnabCategory;
 import co.personal.ynabsyncher.model.ynab.YnabTransaction;
-import co.personal.ynabsyncher.infrastructure.client.dto.*;
+
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
