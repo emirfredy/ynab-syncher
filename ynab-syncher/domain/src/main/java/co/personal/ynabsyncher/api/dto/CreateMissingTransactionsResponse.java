@@ -5,9 +5,10 @@ import java.util.Objects;
 
 /**
  * Response from creating missing YNAB transactions.
+ * Contains detailed results for each transaction creation attempt.
  */
 public record CreateMissingTransactionsResponse(
-        List<CreatedTransactionResult> results,
+        List<TransactionCreationResult> results,
         int totalProcessed,
         int successfullyCreated,
         int failed
@@ -51,7 +52,7 @@ public record CreateMissingTransactionsResponse(
         }
     }
     
-    public static CreateMissingTransactionsResponse from(List<CreatedTransactionResult> results) {
+    public static CreateMissingTransactionsResponse from(List<TransactionCreationResult> results) {
         Objects.requireNonNull(results, "Results cannot be null");
         
         int successful = (int) results.stream().mapToLong(r -> r.wasSuccessful() ? 1 : 0).sum();

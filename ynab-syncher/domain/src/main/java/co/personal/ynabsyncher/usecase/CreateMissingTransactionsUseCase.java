@@ -2,8 +2,7 @@ package co.personal.ynabsyncher.usecase;
 
 import co.personal.ynabsyncher.api.dto.CreateMissingTransactionsRequest;
 import co.personal.ynabsyncher.api.dto.CreateMissingTransactionsResponse;
-import co.personal.ynabsyncher.api.dto.CreatedTransactionResult;
-import co.personal.ynabsyncher.api.dto.UnreconciledTransactionData;
+import co.personal.ynabsyncher.api.dto.TransactionCreationResult;
 import co.personal.ynabsyncher.api.usecase.CreateMissingTransactions;
 import co.personal.ynabsyncher.model.Category;
 import co.personal.ynabsyncher.model.TransactionId;
@@ -19,9 +18,11 @@ import java.util.Objects;
 /**
  * Implementation of CreateMissingTransactions use case.
  * 
- * This implementation converts unreconciled bank transaction data into YNAB transactions
+ * This implementation converts bank transactions missing from YNAB into YNAB transactions
  * and creates them using the YNAB API client. It handles both successful creations
  * and failures gracefully, providing detailed results for each transaction.
+ * 
+ * Typically used with transactions from ReconciliationResult.missingFromYnab().
  */
 public class CreateMissingTransactionsUseCase implements CreateMissingTransactions {
     
@@ -32,33 +33,32 @@ public class CreateMissingTransactionsUseCase implements CreateMissingTransactio
     }
     
     @Override
-    public CreateMissingTransactionsResponse execute(CreateMissingTransactionsRequest request) {
+    public CreateMissingTransactionsResponse createMissingTransactions(CreateMissingTransactionsRequest request) {
         Objects.requireNonNull(request, "Request cannot be null");
         
-        List<CreatedTransactionResult> results = new ArrayList<>();
+        List<TransactionCreationResult> results = new ArrayList<>();
         
-        for (UnreconciledTransactionData unreconciledData : request.unreconciledTransactions()) {
-            CreatedTransactionResult result = createSingleTransaction(request, unreconciledData);
+        for (BankTransaction bankTransaction : request.missingTransactions()) {
+            TransactionCreationResult result = createSingleTransaction(request, bankTransaction);
             results.add(result);
         }
         
         return CreateMissingTransactionsResponse.from(results);
     }
     
-    private CreatedTransactionResult createSingleTransaction(
+    private TransactionCreationResult createSingleTransaction(
             CreateMissingTransactionsRequest request,
-            UnreconciledTransactionData unreconciledData
+            BankTransaction bankTransaction
     ) {
         try {
-            BankTransaction bankTransaction = unreconciledData.bankTransaction();
-            YnabTransaction ynabTransaction = convertToYnabTransaction(request, unreconciledData);
+            YnabTransaction ynabTransaction = convertToYnabTransaction(request, bankTransaction);
             
             YnabTransaction createdTransaction = ynabApiClient.createTransaction(
                     request.budgetId().value(),
                     ynabTransaction
             );
             
-            return CreatedTransactionResult.success(
+            return TransactionCreationResult.success(
                     createdTransaction.id(),
                     bankTransaction.description(),
                     bankTransaction.amount().toDecimal(),
@@ -68,9 +68,8 @@ public class CreateMissingTransactionsUseCase implements CreateMissingTransactio
         } catch (Exception e) {
             // Generate a temporary transaction ID for failed transactions to maintain consistency
             TransactionId tempId = TransactionId.of("failed-" + System.nanoTime());
-            BankTransaction bankTransaction = unreconciledData.bankTransaction();
             
-            return CreatedTransactionResult.failure(
+            return TransactionCreationResult.failure(
                     tempId,
                     bankTransaction.description(),
                     bankTransaction.amount().toDecimal(),
@@ -82,11 +81,9 @@ public class CreateMissingTransactionsUseCase implements CreateMissingTransactio
     
     private YnabTransaction convertToYnabTransaction(
             CreateMissingTransactionsRequest request,
-            UnreconciledTransactionData unreconciledData
+            BankTransaction bankTransaction
     ) {
-        BankTransaction bankTransaction = unreconciledData.bankTransaction();
-        
-        // Use the inferred category from the bank transaction, or create a default "To be Budgeted" category
+        // Use the inferred category from the bank transaction
         Category category = bankTransaction.inferredCategory();
         
         // Generate a new transaction ID for the YNAB transaction

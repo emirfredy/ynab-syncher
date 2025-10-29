@@ -8,8 +8,9 @@ import java.util.Objects;
 
 /**
  * Result of creating a transaction in YNAB.
+ * Contains the outcome and details of an individual transaction creation attempt.
  */
-public record CreatedTransactionResult(
+public record TransactionCreationResult(
         TransactionId transactionId,
         String description,
         BigDecimal amount,
@@ -17,7 +18,7 @@ public record CreatedTransactionResult(
         boolean wasSuccessful,
         String errorMessage
 ) {
-    public CreatedTransactionResult {
+    public TransactionCreationResult {
         Objects.requireNonNull(transactionId, "Transaction ID cannot be null");
         Objects.requireNonNull(description, "Description cannot be null");
         Objects.requireNonNull(amount, "Amount cannot be null");
@@ -36,22 +37,22 @@ public record CreatedTransactionResult(
         }
     }
     
-    public static CreatedTransactionResult success(
+    public static TransactionCreationResult success(
             TransactionId transactionId,
             String description,
             BigDecimal amount,
             LocalDate date
     ) {
-        return new CreatedTransactionResult(transactionId, description, amount, date, true, null);
+        return new TransactionCreationResult(transactionId, description, amount, date, true, null);
     }
     
-    public static CreatedTransactionResult failure(
+    public static TransactionCreationResult failure(
             TransactionId transactionId,
             String description,
             BigDecimal amount,
             LocalDate date,
             String errorMessage
     ) {
-        return new CreatedTransactionResult(transactionId, description, amount, date, false, errorMessage);
+        return new TransactionCreationResult(transactionId, description, amount, date, false, errorMessage);
     }
 }

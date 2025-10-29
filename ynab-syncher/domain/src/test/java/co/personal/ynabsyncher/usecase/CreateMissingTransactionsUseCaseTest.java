@@ -2,14 +2,12 @@ package co.personal.ynabsyncher.usecase;
 
 import co.personal.ynabsyncher.api.dto.CreateMissingTransactionsRequest;
 import co.personal.ynabsyncher.api.dto.CreateMissingTransactionsResponse;
-import co.personal.ynabsyncher.api.dto.CreatedTransactionResult;
-import co.personal.ynabsyncher.api.dto.UnreconciledTransactionData;
+import co.personal.ynabsyncher.api.dto.TransactionCreationResult;
 import co.personal.ynabsyncher.api.error.YnabApiException;
 import co.personal.ynabsyncher.api.usecase.CreateMissingTransactions;
 import co.personal.ynabsyncher.model.AccountId;
 import co.personal.ynabsyncher.model.BudgetId;
 import co.personal.ynabsyncher.model.Category;
-import co.personal.ynabsyncher.model.CategoryId;
 import co.personal.ynabsyncher.model.Money;
 import co.personal.ynabsyncher.model.TransactionId;
 import co.personal.ynabsyncher.model.bank.BankTransaction;
@@ -23,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -77,21 +74,15 @@ class CreateMissingTransactionsUseCaseTest {
                     "Weekly groceries"
             );
 
-            UnreconciledTransactionData unreconciledData = new UnreconciledTransactionData(
-                    bankTransaction,
-                    Optional.of(CategoryId.of("cat-food")),
-                    0.85
-            );
-
             CreateMissingTransactionsRequest request = new CreateMissingTransactionsRequest(
                     budgetId,
                     bankAccountId,
                     ynabAccountId,
-                    List.of(unreconciledData)
+                    List.of(bankTransaction)
             );
 
             // When
-            CreateMissingTransactionsResponse response = createMissingTransactions.execute(request);
+            CreateMissingTransactionsResponse response = createMissingTransactions.createMissingTransactions(request);
 
             // Then
             assertThat(response.totalProcessed()).isEqualTo(1);
@@ -99,7 +90,7 @@ class CreateMissingTransactionsUseCaseTest {
             assertThat(response.failed()).isEqualTo(0);
             assertThat(response.results()).hasSize(1);
 
-            CreatedTransactionResult result = response.results().get(0);
+            TransactionCreationResult result = response.results().get(0);
             assertThat(result.transactionId()).isNotNull();
             assertThat(result.description()).isEqualTo("GROCERY STORE #123");
             assertThat(result.amount()).isEqualTo(new BigDecimal("-25.50"));
@@ -133,20 +124,15 @@ class CreateMissingTransactionsUseCaseTest {
                     "Morning coffee"
             );
 
-            List<UnreconciledTransactionData> unreconciledData = List.of(
-                    new UnreconciledTransactionData(bankTransaction1, Optional.of(CategoryId.of("cat-food")), 0.85),
-                    new UnreconciledTransactionData(bankTransaction2, Optional.of(CategoryId.of("cat-coffee")), 0.92)
-            );
-
             CreateMissingTransactionsRequest request = new CreateMissingTransactionsRequest(
                     budgetId,
                     bankAccountId,
                     ynabAccountId,
-                    unreconciledData
+                    List.of(bankTransaction1, bankTransaction2)
             );
 
             // When
-            CreateMissingTransactionsResponse response = createMissingTransactions.execute(request);
+            CreateMissingTransactionsResponse response = createMissingTransactions.createMissingTransactions(request);
 
             // Then
             assertThat(response.totalProcessed()).isEqualTo(2);
@@ -154,11 +140,11 @@ class CreateMissingTransactionsUseCaseTest {
             assertThat(response.failed()).isEqualTo(0);
             assertThat(response.results()).hasSize(2);
 
-            CreatedTransactionResult result1 = response.results().get(0);
+            TransactionCreationResult result1 = response.results().get(0);
             assertThat(result1.wasSuccessful()).isTrue();
             assertThat(result1.description()).isEqualTo("GROCERY STORE #123");
 
-            CreatedTransactionResult result2 = response.results().get(1);
+            TransactionCreationResult result2 = response.results().get(1);
             assertThat(result2.wasSuccessful()).isTrue();
             assertThat(result2.description()).isEqualTo("COFFEE SHOP");
 
@@ -186,21 +172,15 @@ class CreateMissingTransactionsUseCaseTest {
                     "Weekly groceries"
             );
 
-            UnreconciledTransactionData unreconciledData = new UnreconciledTransactionData(
-                    bankTransaction,
-                    Optional.of(CategoryId.of("cat-food")),
-                    0.85
-            );
-
             CreateMissingTransactionsRequest request = new CreateMissingTransactionsRequest(
                     budgetId,
                     bankAccountId,
                     ynabAccountId,
-                    List.of(unreconciledData)
+                    List.of(bankTransaction)
             );
 
             // When
-            CreateMissingTransactionsResponse response = createMissingTransactions.execute(request);
+            CreateMissingTransactionsResponse response = createMissingTransactions.createMissingTransactions(request);
 
             // Then
             assertThat(response.totalProcessed()).isEqualTo(1);
@@ -208,7 +188,7 @@ class CreateMissingTransactionsUseCaseTest {
             assertThat(response.failed()).isEqualTo(1);
             assertThat(response.results()).hasSize(1);
 
-            CreatedTransactionResult result = response.results().get(0);
+            TransactionCreationResult result = response.results().get(0);
             assertThat(result.wasSuccessful()).isFalse();
             assertThat(result.description()).isEqualTo("GROCERY STORE #123");
             assertThat(result.amount()).isEqualTo(new BigDecimal("-25.50"));
@@ -224,7 +204,7 @@ class CreateMissingTransactionsUseCaseTest {
         @Test
         @DisplayName("Should throw exception when request is null")
         void shouldThrowExceptionWhenRequestIsNull() {
-            assertThatThrownBy(() -> createMissingTransactions.execute(null))
+            assertThatThrownBy(() -> createMissingTransactions.createMissingTransactions(null))
                     .isInstanceOf(NullPointerException.class)
                     .hasMessage("Request cannot be null");
         }
