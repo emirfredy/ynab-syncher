@@ -321,7 +321,7 @@ abstract class YnabApiClientContractTest {
                     Money.of(10.00),
                     "Test Payee",
                     "Test memo",
-                    new Category("cat-123", "Test Category", CategoryType.YNAB_ASSIGNED), // Valid category
+                    new Category(CategoryId.of("cat-123"), "Test Category", CategoryType.YNAB_ASSIGNED), // Valid category
                     ClearedStatus.UNCLEARED,
                     true, // approved
                     null // flagColor - can be null
@@ -421,7 +421,7 @@ abstract class YnabApiClientContractTest {
                     Money.of(10.00),
                     "Test Payee",
                     "Test memo",
-                    new Category("cat-123", "Test Category", CategoryType.YNAB_ASSIGNED),
+                    new Category(CategoryId.of("cat-123"), "Test Category", CategoryType.YNAB_ASSIGNED),
                     ClearedStatus.UNCLEARED,
                     true,
                     null

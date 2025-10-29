@@ -8,7 +8,7 @@ import java.util.Objects;
  * to participate in reconciliation logic.
  */
 public record Category(
-    String id,
+    CategoryId id,
     String name,
     CategoryType type
 ) {
@@ -16,9 +16,6 @@ public record Category(
         Objects.requireNonNull(id, "Category ID cannot be null");
         Objects.requireNonNull(name, "Category name cannot be null");
         Objects.requireNonNull(type, "Category type cannot be null");
-        if (id.isBlank()) {
-            throw new IllegalArgumentException("Category ID cannot be blank");
-        }
         if (name.isBlank()) {
             throw new IllegalArgumentException("Category name cannot be blank");
         }
@@ -28,7 +25,7 @@ public record Category(
      * Creates a YNAB category with explicit assignment.
      */
     public static Category ynabCategory(String id, String name) {
-        return new Category(id, name, CategoryType.YNAB_ASSIGNED);
+        return new Category(CategoryId.of(id), name, CategoryType.YNAB_ASSIGNED);
     }
 
     /**
@@ -37,14 +34,14 @@ public record Category(
     public static Category inferredCategory(String name) {
         // Generate a consistent ID for inferred categories
         String id = "inferred_" + name.toLowerCase().replaceAll("\\s+", "_");
-        return new Category(id, name, CategoryType.BANK_INFERRED);
+        return new Category(CategoryId.of(id), name, CategoryType.BANK_INFERRED);
     }
 
     /**
      * Creates an unknown/uncategorized category.
      */
     public static Category unknown() {
-        return new Category("unknown", "Uncategorized", CategoryType.UNKNOWN);
+        return new Category(CategoryId.of("unknown"), "Uncategorized", CategoryType.UNKNOWN);
     }
 
     /**
@@ -53,7 +50,7 @@ public record Category(
     public static Category of(String groupName, String categoryName) {
         String fullName = groupName + ": " + categoryName;
         String id = (groupName + "_" + categoryName).toLowerCase().replaceAll("\\s+", "_");
-        return new Category(id, fullName, CategoryType.YNAB_ASSIGNED);
+        return new Category(CategoryId.of(id), fullName, CategoryType.YNAB_ASSIGNED);
     }
 
     /**

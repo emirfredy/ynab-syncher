@@ -3,6 +3,7 @@ package co.personal.ynabsyncher.infrastructure.client;
 import co.personal.ynabsyncher.infrastructure.client.dto.*;
 import co.personal.ynabsyncher.model.AccountId;
 import co.personal.ynabsyncher.model.Category;
+import co.personal.ynabsyncher.model.CategoryId;
 import co.personal.ynabsyncher.model.CategoryType;
 import co.personal.ynabsyncher.model.Money;
 import co.personal.ynabsyncher.model.TransactionId;
@@ -163,9 +164,9 @@ public class YnabApiMapper {
     private Category createCategory(String categoryId, String categoryName) {
         if (categoryId == null) {
             // Use a default category for uncategorized transactions (like transfers)
-            return new Category("uncategorized", "Uncategorized", CategoryType.YNAB_ASSIGNED);
+            return new Category(CategoryId.of("uncategorized"), "Uncategorized", CategoryType.YNAB_ASSIGNED);
         }
-        return new Category(categoryId, categoryName, CategoryType.YNAB_ASSIGNED);
+        return new Category(CategoryId.of(categoryId), categoryName, CategoryType.YNAB_ASSIGNED);
     }
 
     /**
@@ -178,7 +179,7 @@ public class YnabApiMapper {
         dto.setAmount(toMilliunits(transaction.amount()));
         dto.setPayeeName(transaction.payeeName());
         dto.setMemo(transaction.memo());
-        dto.setCategoryId(transaction.category().id());
+        dto.setCategoryId(transaction.category().id().value());
         dto.setCleared(mapClearedStatus(transaction.clearedStatus()));
         dto.setApproved(transaction.approved());
         dto.setFlagColor(transaction.flagColor());
