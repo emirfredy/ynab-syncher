@@ -89,6 +89,52 @@ cd ynab-syncher
 open domain/target/pit-reports/*/index.html
 ```
 
+## 🛠️ **Development Scripts**
+
+The `ynab-syncher/scripts/` directory contains utility scripts for common development workflows:
+
+### **Branch Management**
+
+- **`merge-to-master.sh`** - Safely merge feature branches to master with comprehensive testing
+- **`dry-run-merge.sh`** - Validate merge prerequisites without performing any git operations
+
+```bash
+# Navigate to the ynab-syncher subdirectory
+cd ynab-syncher
+
+# Validate current branch can be merged (safe preview)
+./scripts/dry-run-merge.sh
+
+# Merge current branch to master (with full testing)
+./scripts/merge-to-master.sh
+
+# Merge specific branch to master
+./scripts/merge-to-master.sh feature/new-feature
+```
+
+**Script Features:**
+- ✅ **Safety Checks**: Validates git repo, remote, and uncommitted changes
+- ✅ **Test Execution**: Runs full test suite before merging (prevents broken code)
+- ✅ **Interactive Prompts**: Confirms operations and offers branch cleanup
+- ✅ **Error Handling**: Exits on any failure with clear colored output
+- ✅ **Git Best Practices**: Uses `--no-ff` merge to preserve branch history
+
+See [`ynab-syncher/scripts/README.md`](ynab-syncher/scripts/README.md) for detailed documentation.
+
+# Start the application
+./mvnw -pl infrastructure spring-boot:run
+```
+
+### **Run Mutation Testing**
+
+```bash
+# Generate mutation testing report
+./mvnw -pl domain org.pitest:pitest-maven:mutationCoverage
+
+# View results
+open domain/target/pit-reports/*/index.html
+```
+
 ## 📊 **Quality Metrics**
 
 | Metric                 | Value         | Threshold |
