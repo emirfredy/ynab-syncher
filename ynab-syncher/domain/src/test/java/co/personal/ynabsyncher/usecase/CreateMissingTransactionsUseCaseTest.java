@@ -91,12 +91,12 @@ class CreateMissingTransactionsUseCaseTest {
             assertThat(response.results()).hasSize(1);
 
             TransactionCreationResult result = response.results().get(0);
-            assertThat(result.transactionId()).isNotNull();
-            assertThat(result.description()).isEqualTo("GROCERY STORE #123");
-            assertThat(result.amount()).isEqualTo(new BigDecimal("-25.50"));
-            assertThat(result.date()).isEqualTo(LocalDate.of(2024, 1, 15));
+            assertThat(result.ynabTransactionId()).isPresent();
+            assertThat(result.originalTransaction().description()).isEqualTo("GROCERY STORE #123");
+            assertThat(result.originalTransaction().amount().toDecimal()).isEqualTo(new BigDecimal("-25.50"));
+            assertThat(result.originalTransaction().date()).isEqualTo(LocalDate.of(2024, 1, 15));
             assertThat(result.wasSuccessful()).isTrue();
-            assertThat(result.errorMessage()).isNull();
+            assertThat(result.errorMessage()).isEmpty();
 
             // Verify the API was called
             assertThat(testYnabApiClient.getCreateTransactionCallCount()).isEqualTo(1);
@@ -142,11 +142,11 @@ class CreateMissingTransactionsUseCaseTest {
 
             TransactionCreationResult result1 = response.results().get(0);
             assertThat(result1.wasSuccessful()).isTrue();
-            assertThat(result1.description()).isEqualTo("GROCERY STORE #123");
+            assertThat(result1.originalTransaction().description()).isEqualTo("GROCERY STORE #123");
 
             TransactionCreationResult result2 = response.results().get(1);
             assertThat(result2.wasSuccessful()).isTrue();
-            assertThat(result2.description()).isEqualTo("COFFEE SHOP");
+            assertThat(result2.originalTransaction().description()).isEqualTo("COFFEE SHOP");
 
             assertThat(testYnabApiClient.getCreateTransactionCallCount()).isEqualTo(2);
         }
@@ -190,10 +190,104 @@ class CreateMissingTransactionsUseCaseTest {
 
             TransactionCreationResult result = response.results().get(0);
             assertThat(result.wasSuccessful()).isFalse();
-            assertThat(result.description()).isEqualTo("GROCERY STORE #123");
-            assertThat(result.amount()).isEqualTo(new BigDecimal("-25.50"));
-            assertThat(result.date()).isEqualTo(LocalDate.of(2024, 1, 15));
-            assertThat(result.errorMessage()).contains("Failed to create transaction: Budget not found");
+            assertThat(result.originalTransaction().description()).isEqualTo("GROCERY STORE #123");
+            assertThat(result.originalTransaction().amount().toDecimal()).isEqualTo(new BigDecimal("-25.50"));
+            assertThat(result.originalTransaction().date()).isEqualTo(LocalDate.of(2024, 1, 15));
+            assertThat(result.errorMessage()).isPresent();
+            assertThat(result.errorMessage().get()).contains("Failed to create transaction: Budget not found");
+        }
+    }
+
+    @Nested
+    @DisplayName("Response Helper Methods")
+    class ResponseHelperMethods {
+
+        @Test
+        @DisplayName("Should correctly filter successful and failed results")
+        void shouldCorrectlyFilterSuccessfulAndFailedResults() {
+            // Given
+            BankTransaction bankTransaction1 = createBankTransaction(
+                    "txn-1",
+                    LocalDate.of(2024, 1, 15),
+                    Money.of(BigDecimal.valueOf(-25.50)),
+                    "GROCERY STORE #123",
+                    "ACME GROCERY",
+                    "Weekly groceries"
+            );
+
+            BankTransaction bankTransaction2 = createBankTransaction(
+                    "txn-2",
+                    LocalDate.of(2024, 1, 16),
+                    Money.of(BigDecimal.valueOf(-4.99)),
+                    "COFFEE SHOP",
+                    "STARBUCKS",
+                    "Morning coffee"
+            );
+
+            // Setup one success and one failure
+            testYnabApiClient.setShouldThrowException(false);
+            
+            CreateMissingTransactionsRequest request = new CreateMissingTransactionsRequest(
+                    budgetId,
+                    bankAccountId,
+                    ynabAccountId,
+                    List.of(bankTransaction1, bankTransaction2)
+            );
+
+            // When
+            CreateMissingTransactionsResponse response = createMissingTransactions.createMissingTransactions(request);
+
+            // Then - Test convenience methods
+            assertThat(response.allSuccessful()).isTrue();
+            assertThat(response.hasFailures()).isFalse();
+            
+            List<TransactionCreationResult> successfulResults = response.getSuccessfulResults();
+            assertThat(successfulResults).hasSize(2);
+            assertThat(successfulResults.get(0).originalTransaction()).isEqualTo(bankTransaction1);
+            assertThat(successfulResults.get(1).originalTransaction()).isEqualTo(bankTransaction2);
+            
+            List<TransactionCreationResult> failedResults = response.getFailedResults();
+            assertThat(failedResults).isEmpty();
+        }
+        
+        @Test
+        @DisplayName("Should handle mixed success and failure results")
+        void shouldHandleMixedSuccessAndFailureResults() {
+            // Given
+            BankTransaction bankTransaction = createBankTransaction(
+                    "txn-1",
+                    LocalDate.of(2024, 1, 15),
+                    Money.of(BigDecimal.valueOf(-25.50)),
+                    "GROCERY STORE #123",
+                    "ACME GROCERY",
+                    "Weekly groceries"
+            );
+
+            // Setup failure
+            testYnabApiClient.setShouldThrowException(true);
+            testYnabApiClient.setExceptionToThrow(new YnabApiException("API Error", new RuntimeException()));
+            
+            CreateMissingTransactionsRequest request = new CreateMissingTransactionsRequest(
+                    budgetId,
+                    bankAccountId,
+                    ynabAccountId,
+                    List.of(bankTransaction)
+            );
+
+            // When
+            CreateMissingTransactionsResponse response = createMissingTransactions.createMissingTransactions(request);
+
+            // Then
+            assertThat(response.allSuccessful()).isFalse();
+            assertThat(response.hasFailures()).isTrue();
+            
+            List<TransactionCreationResult> successfulResults = response.getSuccessfulResults();
+            assertThat(successfulResults).isEmpty();
+            
+            List<TransactionCreationResult> failedResults = response.getFailedResults();
+            assertThat(failedResults).hasSize(1);
+            assertThat(failedResults.get(0).originalTransaction()).isEqualTo(bankTransaction);
+            assertThat(failedResults.get(0).errorMessage()).isPresent();
         }
     }
 

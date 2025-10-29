@@ -60,4 +60,38 @@ public record CreateMissingTransactionsResponse(
         
         return new CreateMissingTransactionsResponse(results, results.size(), successful, failed);
     }
+    
+    /**
+     * Get only the successful transaction creation results.
+     * Useful for tracking which bank transactions were successfully created in YNAB.
+     */
+    public List<TransactionCreationResult> getSuccessfulResults() {
+        return results.stream()
+                .filter(TransactionCreationResult::wasSuccessful)
+                .toList();
+    }
+    
+    /**
+     * Get only the failed transaction creation results.
+     * Useful for error reporting and retry logic.
+     */
+    public List<TransactionCreationResult> getFailedResults() {
+        return results.stream()
+                .filter(result -> !result.wasSuccessful())
+                .toList();
+    }
+    
+    /**
+     * Check if there were any failures in the transaction creation process.
+     */
+    public boolean hasFailures() {
+        return failed > 0;
+    }
+    
+    /**
+     * Check if all transactions were successfully created.
+     */
+    public boolean allSuccessful() {
+        return failed == 0;
+    }
 }

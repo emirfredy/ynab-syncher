@@ -59,21 +59,13 @@ public class CreateMissingTransactionsUseCase implements CreateMissingTransactio
             );
             
             return TransactionCreationResult.success(
-                    createdTransaction.id(),
-                    bankTransaction.description(),
-                    bankTransaction.amount().toDecimal(),
-                    bankTransaction.date()
+                    bankTransaction,
+                    createdTransaction.id()
             );
             
         } catch (Exception e) {
-            // Generate a temporary transaction ID for failed transactions to maintain consistency
-            TransactionId tempId = TransactionId.of("failed-" + System.nanoTime());
-            
             return TransactionCreationResult.failure(
-                    tempId,
-                    bankTransaction.description(),
-                    bankTransaction.amount().toDecimal(),
-                    bankTransaction.date(),
+                    bankTransaction,
                     "Failed to create transaction: " + e.getMessage()
             );
         }
