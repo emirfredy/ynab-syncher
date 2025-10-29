@@ -14,7 +14,6 @@ import co.personal.ynabsyncher.model.ynab.YnabTransaction;
 
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
