@@ -13,6 +13,16 @@
 
 set -e  # Exit on any error
 
+# =============================================================================
+# PROJECT CONFIGURATION
+# =============================================================================
+# Determine the project root directory (parent of scripts directory)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+echo "Script location: $SCRIPT_DIR"
+echo "Project root: $PROJECT_ROOT"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -73,6 +83,13 @@ print_warning() {
     echo -e "${YELLOW}⚠️  $1${NC}"
 }
 
+# Execute Maven command from project root
+execute_maven() {
+    local command="$1"
+    echo "Executing from $PROJECT_ROOT: $command"
+    cd "$PROJECT_ROOT" && eval "$command"
+}
+
 # Extract test count from Maven output
 extract_test_count() {
     local output="$1"
@@ -94,9 +111,10 @@ extract_test_errors() {
 }
 
 # Extract coverage percentage from JaCoCo HTML report
+# Extract coverage percentage from JaCoCo HTML report
 extract_coverage_percentage() {
     local module_path="$1"
-    local jacoco_index="${module_path}/target/site/jacoco/index.html"
+    local jacoco_index="${PROJECT_ROOT}/${module_path}/target/site/jacoco/index.html"
     
     if [[ -f "$jacoco_index" ]]; then
         # Extract the overall coverage percentage from the HTML footer
@@ -135,7 +153,7 @@ run_test_suite() {
     
     # Handle mutation testing specially (it might fail threshold but still provide useful info)
     if [[ "$name" == *"Mutation"* ]]; then
-        if output=$(eval "$command" 2>&1); then
+        if output=$(execute_maven "$command" 2>&1); then
             local end_time=$(date +%s)
             local duration=$((end_time - start_time))
             test_results["$name"]="PASS"
@@ -161,7 +179,7 @@ run_test_suite() {
             fi
         fi
     else
-        if output=$(eval "$command" 2>&1); then
+        if output=$(execute_maven "$command" 2>&1); then
             local end_time=$(date +%s)
             local duration=$((end_time - start_time))
             
@@ -284,13 +302,22 @@ generate_summary_report() {
 }
 
 # Main execution
+# Main execution
 main() {
+    # Validate project structure
+    if [[ ! -f "$PROJECT_ROOT/pom.xml" ]]; then
+        print_error "Maven pom.xml not found in $PROJECT_ROOT"
+        print_error "Please run this script from the scripts directory of the YNAB-Syncher project"
+        exit 1
+    fi
+    
     # Quick mode - skip the longest tests
     if [[ "$1" == "--quick" ]]; then
         print_header "🧪 YNAB Syncher - Quick Test Suite"
         
         echo -e "${WHITE}Running quick test execution...${NC}"
         echo -e "${WHITE}Project: YNAB-Syncher (Hexagonal Architecture)${NC}"
+        echo -e "${WHITE}Project Root: $PROJECT_ROOT${NC}"
         echo -e "${WHITE}Date: $(date)${NC}"
         
         # Run only the faster tests
@@ -311,6 +338,9 @@ main() {
     print_header "🧪 YNAB Syncher - Comprehensive Test & Validation Suite"
     
     echo -e "${WHITE}Starting comprehensive test execution...${NC}"
+    echo -e "${WHITE}Project: YNAB-Syncher (Hexagonal Architecture)${NC}"
+    echo -e "${WHITE}Project Root: $PROJECT_ROOT${NC}"
+    echo -e "${WHITE}Date: $(date)${NC}"
     echo -e "${WHITE}Project: YNAB-Syncher (Hexagonal Architecture)${NC}"
     echo -e "${WHITE}Date: $(date)${NC}"
     
@@ -345,7 +375,7 @@ main() {
     
     # Add timeout for mutation testing to prevent hanging
     local start_time=$(date +%s)
-    if timeout 120s bash -c 'mvn -pl domain clean compile test-compile org.pitest:pitest-maven:mutationCoverage' > /tmp/mutation_output 2>&1; then
+    if timeout 120s bash -c "cd '$PROJECT_ROOT' && mvn -pl domain clean compile test-compile org.pitest:pitest-maven:mutationCoverage" > /tmp/mutation_output 2>&1; then
         local end_time=$(date +%s)
         local duration=$((end_time - start_time))
         test_results["Mutation Testing (PIT)"]="PASS"
