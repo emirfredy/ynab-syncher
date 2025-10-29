@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Scripts ###
+scripts/*.log
+scripts/temp/
+*.backup

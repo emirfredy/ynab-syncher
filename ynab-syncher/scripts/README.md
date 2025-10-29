@@ -1,10 +1,82 @@
-# 🧪 YNAB Syncher - Test & Validation Scripts
+# Scripts Directory
 
-This directory contains comprehensive test and validation scripts for the YNAB Syncher project, built with Hexagonal Architecture principles.
+This directory contains utility scripts for the YNAB-Syncher project.
 
-## 📁 Available Scripts
+## Available Scripts
 
-### 1. `run-tests.sh` - Full Comprehensive Test Suite
+### `merge-to-master.sh`
+
+A comprehensive script for safely merging feature branches to master and pushing to GitHub.
+
+**Features:**
+- ✅ **Safety Checks**: Validates git repo, remote, and uncommitted changes
+- ✅ **Test Execution**: Runs full test suite before merging
+- ✅ **Interactive Prompts**: Confirms operations and offers branch cleanup
+- ✅ **Error Handling**: Exits on any failure with clear error messages
+- ✅ **Colored Output**: Easy-to-read status messages
+
+**Usage:**
+```bash
+# Merge current branch to master
+./scripts/merge-to-master.sh
+
+# Merge specific branch to master
+./scripts/merge-to-master.sh feature/new-feature
+
+# Show help
+./scripts/merge-to-master.sh --help
+```
+
+### `dry-run-merge.sh`
+
+A validation script that checks all prerequisites for merging without performing any actual git operations.
+
+**Features:**
+- ✅ **Safe Validation**: No actual git operations performed
+- ✅ **Prerequisite Checks**: Validates all requirements
+- ✅ **Preview Commands**: Shows exactly what would be executed
+- ✅ **Quick Feedback**: Fast validation before running the actual merge
+
+**Usage:**
+```bash
+# Validate current branch for merging
+./scripts/dry-run-merge.sh
+
+# Validate specific branch for merging  
+./scripts/dry-run-merge.sh feature/new-feature
+
+# Show help
+./scripts/dry-run-merge.sh --help
+```
+
+**What it does:**
+1. Validates prerequisites (git repo, remote, no uncommitted changes)
+2. Runs full test suite on the source branch
+3. Switches to master and pulls latest changes
+4. Merges feature branch with `--no-ff` flag (creates merge commit)
+5. Pushes master to GitHub
+6. Optionally deletes local and remote feature branches
+
+**Prerequisites:**
+- Must be in a Git repository
+- Must have 'origin' remote configured  
+- No uncommitted changes
+- All tests must pass
+
+**Safety Features:**
+- Validates all prerequisites before starting
+- Runs tests to prevent broken code from reaching master
+- Uses `--no-ff` merge to preserve branch history
+- Confirms destructive operations (branch deletion)
+- Provides clear error messages and status updates
+
+This script follows Git Flow best practices and ensures that only tested, working code reaches the master branch.
+
+## 🧪 Test & Validation Scripts
+
+The YNAB Syncher project includes comprehensive test and validation scripts built with Hexagonal Architecture principles.
+
+### `run-tests.sh` - Full Comprehensive Test Suite
 
 **Complete validation including mutation testing (takes 5-10 minutes)**
 
@@ -12,7 +84,7 @@ This directory contains comprehensive test and validation scripts for the YNAB S
 ./run-tests.sh
 ```
 
-### 2. `run-tests.sh --quick` - Essential Test Suite
+### `run-tests.sh --quick` - Essential Test Suite
 
 **Quick validation of core functionality (takes 1-2 minutes)**
 
@@ -32,7 +104,7 @@ This directory contains comprehensive test and validation scripts for the YNAB S
 
 ## 🎨 Color-Coded Status Display
 
-The script now provides color-coded status indicators for easy visual scanning:
+The script provides color-coded status indicators for easy visual scanning:
 
 - 🟢 **PASS** - Green (tests passed successfully)
 - 🟡 **WARN** - Yellow (tests passed with warnings)
@@ -65,9 +137,6 @@ ALL TEST SUITES PASSED!
 - **Mutation Score**: Real-time mutation testing score (typically 70%+)
 - **Color-Coded Status**: Visual status indicators for quick scanning
 - **Execution Duration**: Actual timing for each test category
-  Full Build Verification ✅ PASS 34 tests 13-15s
-  Code Coverage Analysis ✅ PASS 79% coverage, 38% coverage 13s
-  Mutation Testing (PIT) ✅ PASS 70% mutation score 57s
 
 ## 🚀 Script Features & Improvements
 
@@ -170,7 +239,6 @@ When all tests pass, the system demonstrates:
    mvn -pl domain org.pitest:pitest-maven:mutationCoverage
    # Review HTML report in domain/target/pit-reports/
    # Focus on line coverage (should be 80%+) and test strength
-
    ```
 
 2. **Architecture Test Failures**

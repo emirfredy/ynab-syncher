@@ -1,0 +1,75 @@
+# YNAB-Syncher
+
+A hexagonal architecture application for synchronizing bank transactions with YNAB (You Need A Budget).
+
+## Project Structure
+
+```
+ynab-syncher/
+├── domain/           # Framework-free business logic
+├── infrastructure/   # Spring Boot application & adapters  
+├── scripts/          # Utility scripts for development
+└── pom.xml          # Multi-module Maven configuration
+```
+
+## Development Scripts
+
+The `scripts/` directory contains utility scripts for common development tasks:
+
+### Branch Management
+
+- **`merge-to-master.sh`** - Safely merge feature branches to master with testing
+- **`dry-run-merge.sh`** - Validate merge prerequisites without performing operations
+
+```bash
+# Validate current branch can be merged
+./scripts/dry-run-merge.sh
+
+# Merge current branch to master
+./scripts/merge-to-master.sh
+
+# Merge specific branch to master
+./scripts/merge-to-master.sh feature/new-feature
+```
+
+See [`scripts/README.md`](scripts/README.md) for detailed documentation.
+
+## Building & Testing
+
+```bash
+# Build entire project
+mvn clean compile
+
+# Run all tests
+mvn test
+
+# Run tests with coverage
+mvn verify
+
+# Build specific module
+mvn -pl domain clean test
+mvn -pl infrastructure clean test
+```
+
+## Architecture
+
+This project follows hexagonal architecture principles:
+
+- **Domain Layer**: Framework-free business logic with ports and use cases
+- **Infrastructure Layer**: Spring Boot adapters for external systems (YNAB API, REST controllers)
+- **Clean Separation**: Domain has no dependencies on frameworks
+- **Testability**: Comprehensive unit and integration testing
+
+The architecture is enforced by ArchUnit tests in the infrastructure module.
+
+## Contributing
+
+1. Create a feature branch from `master`
+2. Implement changes following hexagonal architecture principles
+3. Ensure all tests pass: `mvn test`
+4. Use dry-run script to validate: `./scripts/dry-run-merge.sh`
+5. Merge using: `./scripts/merge-to-master.sh`
+
+## License
+
+[Add your license here]
