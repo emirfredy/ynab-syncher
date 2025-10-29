@@ -12,10 +12,33 @@ import java.util.Optional;
  * Maps transaction text patterns to categories using exact text matching.
  * Built from historical transaction categorization data.
  * 
- * Read-only from the inference perspective - mappings are created separately
- * through transaction learning processes.
+ * Supports both read operations for inference and write operations for learning.
  */
 public interface CategoryMappingRepository {
+    
+    // ========== WRITE OPERATIONS (Learning) ==========
+    
+    /**
+     * Saves a category mapping. If a mapping with the same ID exists,
+     * it will be updated; otherwise, a new mapping is created.
+     * 
+     * @param mapping the category mapping to save
+     * @return the saved mapping
+     * @throws IllegalArgumentException if mapping is null
+     */
+    CategoryMapping save(CategoryMapping mapping);
+    
+    /**
+     * Saves multiple category mappings in a batch operation.
+     * More efficient than individual save operations.
+     * 
+     * @param mappings the mappings to save
+     * @return list of saved mappings in the same order
+     * @throws IllegalArgumentException if mappings is null or empty
+     */
+    List<CategoryMapping> saveAll(List<CategoryMapping> mappings);
+    
+    // ========== READ OPERATIONS (Inference) ==========
     
     /**
      * Finds category mappings that have exact text matches with the given transaction pattern.

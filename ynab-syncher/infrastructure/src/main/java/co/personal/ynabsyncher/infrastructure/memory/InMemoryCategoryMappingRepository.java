@@ -53,12 +53,18 @@ public class InMemoryCategoryMappingRepository implements CategoryMappingReposit
                 .toList();
     }
     
-    /**
-     * Saves a category mapping for future exact text matching.
-     * Package-private for testing purposes.
-     */
-    public void save(CategoryMapping mapping) {
+    @Override
+    public CategoryMapping save(CategoryMapping mapping) {
         mappingsById.put(mapping.id().value(), mapping);
+        return mapping;
+    }
+    
+    @Override
+    public List<CategoryMapping> saveAll(List<CategoryMapping> mappings) {
+        for (CategoryMapping mapping : mappings) {
+            save(mapping);
+        }
+        return mappings;
     }
     
     /**
