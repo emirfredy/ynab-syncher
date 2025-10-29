@@ -28,7 +28,28 @@ declare -A test_results
 declare -A test_counts
 declare -A test_durations
 
-# Helper functions
+# Colorize status values
+colorize_status() {
+    local status="$1"
+    case "$status" in
+        "PASS")
+            echo -e "${GREEN}${status}${NC}"
+            ;;
+        "WARN")
+            echo -e "${YELLOW}${status}${NC}"
+            ;;
+        "FAIL")
+            echo -e "${RED}${status}${NC}"
+            ;;
+        "SKIP")
+            echo -e "${CYAN}${status}${NC}"
+            ;;
+        *)
+            echo "$status"
+            ;;
+    esac
+}
+
 print_header() {
     echo -e "\n${BLUE}==================================================================================${NC}"
     echo -e "${WHITE}$1${NC}"
@@ -198,7 +219,7 @@ run_test_suite() {
 generate_summary_report() {
     print_header "Test Results Summary"
     
-    echo "Test Category                            Status       Count                     Duration"
+    echo "Test Category                            Status               Count                     Duration"
     echo "============================================================================================"
     
     # Test categories in execution order
@@ -233,10 +254,11 @@ generate_summary_report() {
             ((failed_tests++))
         fi
         
-        # Print row with actual data
-        printf "%-40s %-12s %-25s %-12s\n" \
+        # Print row with actual data using colorized status
+        local colored_status=$(colorize_status "$status")
+        printf "%-40s %-20s %-25s %-12s\n" \
             "$category" \
-            "$status" \
+            "$colored_status" \
             "$count" \
             "$duration"
         
