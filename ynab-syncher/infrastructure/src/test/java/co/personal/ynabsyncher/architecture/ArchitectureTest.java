@@ -475,6 +475,7 @@ class ArchitectureTest {
                         "org.junit..", // Allow test frameworks for test classes
                         "org.assertj..", // Allow test frameworks for test classes
                         "org.mockito..", // Allow test frameworks for test classes
+                        "org.testcontainers..", // Allow Testcontainers in tests
                         "com.github.tomakehurst.wiremock.." // Allow WireMock for test classes
                     )
                     .as("Non-config infrastructure should access domain through SPI contracts");

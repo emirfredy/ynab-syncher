@@ -1,7 +1,6 @@
 package co.personal.ynabsyncher.infrastructure.config;
 
 import co.personal.ynabsyncher.api.usecase.ReconcileTransactions;
-import co.personal.ynabsyncher.infrastructure.memory.InMemoryCategoryMappingRepository;
 import co.personal.ynabsyncher.api.usecase.InferTransactionCategories;
 import co.personal.ynabsyncher.service.TransactionReconciliationService;
 import co.personal.ynabsyncher.spi.repository.BankTransactionRepository;
@@ -45,17 +44,6 @@ public class UseCaseConfig {
     @Bean
     public CategoryInferenceService categoryInferenceService() {
         return new CategoryInferenceService();
-    }
-
-    /**
-     * Creates the category mapping repository.
-     * 
-     * In-memory implementation for testing and initial development.
-     * In production, this would be replaced with a database implementation.
-     */
-    @Bean
-    public CategoryMappingRepository categoryMappingRepository() {
-        return new InMemoryCategoryMappingRepository();
     }
 
     /**

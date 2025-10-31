@@ -93,10 +93,11 @@ public class YnabApiMapper {
         }
         
         // Handle currency format object by extracting ISO code
-        if (currencyFormat instanceof java.util.Map) {
-            @SuppressWarnings("unchecked")
-            java.util.Map<String, Object> currencyMap = (java.util.Map<String, Object>) currencyFormat;
+        if (currencyFormat instanceof java.util.Map<?, ?> currencyMap) {
             Object isoCode = currencyMap.get("iso_code");
+            if (isoCode instanceof String isoString && !isoString.isBlank()) {
+                return isoString;
+            }
             return isoCode != null ? isoCode.toString() : "USD";
         }
         
@@ -220,5 +221,4 @@ public class YnabApiMapper {
             case UNCLEARED -> "uncleared";
             case RECONCILED -> "reconciled";
         };
-    }
 }
