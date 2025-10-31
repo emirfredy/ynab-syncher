@@ -62,6 +62,12 @@ This project follows hexagonal architecture principles:
 
 The architecture is enforced by ArchUnit tests in the infrastructure module.
 
+### Category Mapping Persistence
+
+The category-learning feedback loop now persists mappings in PostgreSQL via Spring Data JDBC and Flyway migrations.  
+Provide standard datasource properties (`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`) when running the Spring Boot app.  
+Database changes are tracked in versioned migrations under `infrastructure/src/main/resources/db/migration`. Integration tests automatically run these migrations against the Testcontainers PostgreSQL instance.
+
 ## Contributing
 
 1. Create a feature branch from `master`

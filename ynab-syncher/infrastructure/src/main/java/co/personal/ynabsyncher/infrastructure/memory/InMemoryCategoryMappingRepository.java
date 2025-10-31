@@ -25,8 +25,8 @@ public class InMemoryCategoryMappingRepository implements CategoryMappingReposit
         return mappingsById.values().stream()
                 .filter(mapping -> mapping.hasExactMatch(pattern))
                 .sorted(Comparator
-                    .comparing(CategoryMapping::confidence).reversed()
-                    .thenComparing(CategoryMapping::occurrenceCount).reversed())
+                        .comparing(CategoryMapping::confidence, Comparator.reverseOrder())
+                        .thenComparing(CategoryMapping::occurrenceCount, Comparator.reverseOrder()))
                 .toList();
     }
     
