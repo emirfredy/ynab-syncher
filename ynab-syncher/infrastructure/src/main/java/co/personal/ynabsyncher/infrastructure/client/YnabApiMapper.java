@@ -221,5 +221,5 @@ public class YnabApiMapper {
             case UNCLEARED -> "uncleared";
             case RECONCILED -> "reconciled";
         };
-}
+    }
 }
