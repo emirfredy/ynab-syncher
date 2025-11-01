@@ -23,7 +23,7 @@ public class YnabCategoryRepositoryAdapter implements YnabCategoryRepository {
 
     public YnabCategoryRepositoryAdapter(
             YnabApiClient ynabApiClient,
-            @Value("${ynab.default-budget-id:}") String defaultBudgetId) {
+            @Value("${ynab.api.default-budget-id:}") String defaultBudgetId) {
         this.ynabApiClient = ynabApiClient;
         this.defaultBudgetId = defaultBudgetId;
     }

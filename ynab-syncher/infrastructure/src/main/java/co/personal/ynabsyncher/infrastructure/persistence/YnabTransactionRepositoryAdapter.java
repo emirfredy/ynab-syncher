@@ -25,7 +25,7 @@ public class YnabTransactionRepositoryAdapter implements YnabTransactionReposito
 
     public YnabTransactionRepositoryAdapter(
             YnabApiClient ynabApiClient,
-            @Value("${ynab.default-budget-id:}") String defaultBudgetId) {
+            @Value("${ynab.api.default-budget-id:}") String defaultBudgetId) {
         this.ynabApiClient = ynabApiClient;
         this.defaultBudgetId = defaultBudgetId;
     }
