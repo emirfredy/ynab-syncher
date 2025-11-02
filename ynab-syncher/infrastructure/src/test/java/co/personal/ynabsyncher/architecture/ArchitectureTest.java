@@ -351,10 +351,24 @@ class ArchitectureTest {
         @DisplayName("Domain services should not depend on use cases")
         void domainServicesShouldNotDependOnUseCases() {
             ArchRule rule = noClasses()
-                    .that().resideInAPackage("..service..")
+                    .that().resideInAPackage("co.personal.ynabsyncher.model.service..")  // Specific domain location
+                    .or().resideInAPackage("co.personal.ynabsyncher.usecase.service..")   // Alternative domain location
                     .should().dependOnClassesThat().resideInAPackage("..usecase..")
-                    .as("Domain services should not depend on use cases (wrong direction)")
-                    .allowEmptyShould(true); // Allow empty check since we use use cases directly
+                    .as("Domain services should not depend on use case interfaces")
+                    .allowEmptyShould(true);
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Application services should orchestrate domain use cases")
+        void applicationServicesShouldOrchestrateDomainUseCases() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..infrastructure.service..")  // Infrastructure application services
+                    .and().haveSimpleNameEndingWith("ApplicationService")
+                    .should().dependOnClassesThat().resideInAnyPackage("..api.usecase..")
+                    .as("Application services should orchestrate domain use cases (Netflix/Uber pattern)")
+                    .allowEmptyShould(true);  // Allow empty since we might not have application services yet
 
             rule.check(allClasses);
         }
@@ -363,10 +377,11 @@ class ArchitectureTest {
         @DisplayName("API DTOs should not be used in domain services")
         void apiDtosShouldNotBeUsedInDomainServices() {
             ArchRule rule = noClasses()
-                    .that().resideInAPackage("..service..")
+                    .that().resideInAPackage("co.personal.ynabsyncher.model.service..")  // Specific domain location
+                    .or().resideInAPackage("co.personal.ynabsyncher.usecase.service..")   // Alternative domain location
                     .should().dependOnClassesThat().resideInAPackage("..api.dto..")
                     .as("Domain services should use domain models, not API DTOs")
-                    .allowEmptyShould(true); // Allow empty check since we use use cases directly
+                    .allowEmptyShould(true);
 
             rule.check(allClasses);
         }

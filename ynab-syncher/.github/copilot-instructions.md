@@ -103,8 +103,8 @@ Act as a world-class peer developer and architect. Assume expert-level knowledge
 
 **CRITICAL: Task Completion Validation**
 
-- **Quick Validation**: Run `./run-tests.sh --quick` and ensure no warnings or errors
-- **Full Validation**: Run `./run-tests.sh` and ensure no warnings or errors
+- **Quick Validation**: Run `./scripts/run-tests.sh --quick` and ensure no warnings or errors
+- **Full Validation**: Run `./scripts/run-tests.sh` and ensure no warnings or errors
 - **Both must pass** before considering any implementation task complete
 
 ## Module Structure & Technology Specifics
@@ -164,17 +164,17 @@ mvn test -Dtest=ArchitectureTest
 mvn -pl domain org.pitest:pitest-maven:mutationCoverage
 
 # Fast test execution (our custom script)
-./run-tests.sh
+./scripts/run-tests.sh
 ```
 
 **run-tests.sh Script Usage:**
 
 ```bash
 # Quick test execution (architecture + unit + integration tests)
-./run-tests.sh --quick
+./scripts/run-tests.sh --quick
 
 # Full comprehensive test suite (includes mutation testing)
-./run-tests.sh
+./scripts/run-tests.sh
 ```
 
 **Script Benefits:**
