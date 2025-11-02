@@ -1,12 +1,18 @@
 package co.personal.ynabsyncher.infrastructure.service;
 
+import co.personal.ynabsyncher.api.dto.CategoryInferenceRequest;
+import co.personal.ynabsyncher.api.dto.CategoryInferenceResponse;
 import co.personal.ynabsyncher.api.dto.CreateMissingTransactionsRequest;
 import co.personal.ynabsyncher.api.dto.CreateMissingTransactionsResponse;
 import co.personal.ynabsyncher.api.dto.ImportBankTransactionsRequest;
 import co.personal.ynabsyncher.api.dto.ImportBankTransactionsResponse;
+import co.personal.ynabsyncher.api.dto.SaveCategoryMappingsRequest;
+import co.personal.ynabsyncher.api.dto.SaveCategoryMappingsResponse;
 import co.personal.ynabsyncher.api.usecase.CreateMissingTransactions;
 import co.personal.ynabsyncher.api.usecase.ImportBankTransactions;
+import co.personal.ynabsyncher.api.usecase.InferTransactionCategories;
 import co.personal.ynabsyncher.api.usecase.ReconcileTransactions;
+import co.personal.ynabsyncher.api.usecase.SaveCategoryMappings;
 import co.personal.ynabsyncher.model.AccountId;
 import co.personal.ynabsyncher.model.BudgetId;
 import co.personal.ynabsyncher.model.reconciliation.ReconciliationRequest;
@@ -18,9 +24,18 @@ import co.personal.ynabsyncher.infrastructure.web.dto.ReconcileTransactionsWebRe
 import co.personal.ynabsyncher.infrastructure.web.dto.ReconcileTransactionsWebResponse;
 import co.personal.ynabsyncher.infrastructure.web.dto.SyncTransactionsWebRequest;
 import co.personal.ynabsyncher.infrastructure.web.dto.SyncTransactionsWebResponse;
+import co.personal.ynabsyncher.infrastructure.web.dto.InferCategoriesWebRequest;
+import co.personal.ynabsyncher.infrastructure.web.dto.InferCategoriesWebResponse;
+import co.personal.ynabsyncher.infrastructure.web.dto.SaveCategoryMappingsWebRequest;
+import co.personal.ynabsyncher.infrastructure.web.dto.SaveCategoryMappingsWebResponse;
+import co.personal.ynabsyncher.infrastructure.web.dto.CreateMissingTransactionsWebRequest;
+import co.personal.ynabsyncher.infrastructure.web.dto.CreateMissingTransactionsWebResponse;
 import co.personal.ynabsyncher.infrastructure.web.dto.mapper.ImportBankTransactionsWebMapper;
 import co.personal.ynabsyncher.infrastructure.web.dto.mapper.ReconcileTransactionsWebMapper;
 import co.personal.ynabsyncher.infrastructure.web.dto.mapper.SyncTransactionsWebMapper;
+import co.personal.ynabsyncher.infrastructure.web.dto.mapper.InferCategoriesWebMapper;
+import co.personal.ynabsyncher.infrastructure.web.dto.mapper.SaveCategoryMappingsWebMapper;
+import co.personal.ynabsyncher.infrastructure.web.dto.mapper.CreateMissingTransactionsWebMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -47,23 +62,38 @@ public class YnabSyncApplicationService {
     private final ImportBankTransactions importBankTransactions;
     private final ReconcileTransactions reconcileTransactions;
     private final CreateMissingTransactions createMissingTransactions;
+    private final InferTransactionCategories inferTransactionCategories;
+    private final SaveCategoryMappings saveCategoryMappings;
     private final ImportBankTransactionsWebMapper importMapper;
     private final ReconcileTransactionsWebMapper reconcileMapper;
     private final SyncTransactionsWebMapper syncMapper;
+    private final InferCategoriesWebMapper inferCategoriesMapper;
+    private final SaveCategoryMappingsWebMapper saveCategoryMappingsMapper;
+    private final CreateMissingTransactionsWebMapper createMissingTransactionsMapper;
 
     public YnabSyncApplicationService(
             ImportBankTransactions importBankTransactions,
             ReconcileTransactions reconcileTransactions,
             CreateMissingTransactions createMissingTransactions,
+            InferTransactionCategories inferTransactionCategories,
+            SaveCategoryMappings saveCategoryMappings,
             ImportBankTransactionsWebMapper importMapper,
             ReconcileTransactionsWebMapper reconcileMapper,
-            SyncTransactionsWebMapper syncMapper) {
+            SyncTransactionsWebMapper syncMapper,
+            InferCategoriesWebMapper inferCategoriesMapper,
+            SaveCategoryMappingsWebMapper saveCategoryMappingsMapper,
+            CreateMissingTransactionsWebMapper createMissingTransactionsMapper) {
         this.importBankTransactions = importBankTransactions;
         this.reconcileTransactions = reconcileTransactions;
         this.createMissingTransactions = createMissingTransactions;
+        this.inferTransactionCategories = inferTransactionCategories;
+        this.saveCategoryMappings = saveCategoryMappings;
         this.importMapper = importMapper;
         this.reconcileMapper = reconcileMapper;
         this.syncMapper = syncMapper;
+        this.inferCategoriesMapper = inferCategoriesMapper;
+        this.saveCategoryMappingsMapper = saveCategoryMappingsMapper;
+        this.createMissingTransactionsMapper = createMissingTransactionsMapper;
     }
 
     /**
@@ -307,5 +337,109 @@ public class YnabSyncApplicationService {
      */
     private SyncTransactionsWebResponse createSimpleSyncResponse(ImportBankTransactionsResponse importResult, String status) {
         return syncMapper.toWebResponse(importResult, null, null);
+    }
+
+    /**
+     * Infers categories for transactions using ML-based analysis.
+     * 
+     * Business Value Added:
+     * - Input validation and business rule enforcement
+     * - ML model integration with proper error handling
+     * - Confidence scoring and quality thresholds
+     * - Proper DTO mapping between web and domain layers
+     */
+    public InferCategoriesWebResponse inferCategories(InferCategoriesWebRequest webRequest) {
+        logger.info("Starting category inference for budget: {} with {} transactions", 
+                webRequest.budgetId(), webRequest.transactions().size());
+        
+        try {
+            // Convert web DTO to domain DTO
+            CategoryInferenceRequest domainRequest = inferCategoriesMapper.toDomainRequest(webRequest);
+            
+            // Execute domain use case
+            CategoryInferenceResponse domainResponse = inferTransactionCategories.inferCategories(domainRequest);
+            
+            // Business analysis and logging
+            logger.info("Category inference completed for budget {}: {} successful, {} failed", 
+                    webRequest.budgetId(), 
+                    domainResponse.successfulInferences(),
+                    domainResponse.failedInferences());
+            
+            // Convert domain DTO to web DTO
+            return inferCategoriesMapper.toWebResponse(domainResponse);
+            
+        } catch (Exception e) {
+            logger.error("Failed to infer categories for budget {}", webRequest.budgetId(), e);
+            throw e;
+        }
+    }
+
+    /**
+     * Saves learned category mappings with conflict resolution.
+     * 
+     * Business Value Added:
+     * - Global ML knowledge base management
+     * - Conflict detection and resolution strategies
+     * - Quality thresholds and validation rules
+     * - Cross-cutting concerns for ML model improvement
+     */
+    public SaveCategoryMappingsWebResponse saveCategoryMappings(SaveCategoryMappingsWebRequest webRequest) {
+        logger.info("Starting category mapping save operation with {} mappings", 
+                webRequest.categoryMappings().size());
+        
+        try {
+            // Convert web DTO to domain DTO
+            SaveCategoryMappingsRequest domainRequest = saveCategoryMappingsMapper.toDomainRequest(webRequest);
+            
+            // Execute domain use case
+            SaveCategoryMappingsResponse domainResponse = saveCategoryMappings.saveCategoryMappings(domainRequest);
+            
+            // Business analysis and logging
+            logger.info("Category mapping save completed: {} new, {} updated, {} skipped", 
+                    domainResponse.savedNew(),
+                    domainResponse.updatedExisting(),
+                    domainResponse.skipped());
+            
+            // Convert domain DTO to web DTO
+            return saveCategoryMappingsMapper.toWebResponse(domainResponse);
+            
+        } catch (Exception e) {
+            logger.error("Failed to save category mappings", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Creates missing transactions in YNAB as standalone operation.
+     * 
+     * Business Value Added:
+     * - Standalone missing transaction creation (outside of sync workflow)
+     * - Business validation and error handling
+     * - Proper DTO mapping between web and domain layers
+     * - Comprehensive result reporting
+     */
+    public CreateMissingTransactionsWebResponse createMissingTransactions(CreateMissingTransactionsWebRequest webRequest) {
+        logger.info("Starting standalone missing transaction creation for account: {} with {} transactions", 
+                webRequest.ynabAccountId(), webRequest.missingTransactions().size());
+        
+        try {
+            // Convert web DTO to domain DTO
+            CreateMissingTransactionsRequest domainRequest = createMissingTransactionsMapper.toDomainRequest(webRequest);
+            
+            // Execute domain use case
+            CreateMissingTransactionsResponse domainResponse = createMissingTransactions.createMissingTransactions(domainRequest);
+            
+            // Business analysis and logging
+            logger.info("Missing transaction creation completed: {} successful, {} failed", 
+                    domainResponse.successfullyCreated(),
+                    domainResponse.failed());
+            
+            // Convert domain DTO to web DTO
+            return createMissingTransactionsMapper.toWebResponse(domainResponse);
+            
+        } catch (Exception e) {
+            logger.error("Failed to create missing transactions for account {}", webRequest.ynabAccountId(), e);
+            throw e;
+        }
     }
 }
