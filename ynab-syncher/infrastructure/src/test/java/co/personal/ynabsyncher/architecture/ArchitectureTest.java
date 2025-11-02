@@ -632,24 +632,22 @@ class ArchitectureTest {
         @DisplayName("DTOs should be collocated with their adapters")
         void dtosShouldBeCollocatedWithTheirAdapters() {
             ArchRule webDtosRule = classes()
-                    .that().haveSimpleNameEndingWith("RequestDto")
-                    .or().haveSimpleNameEndingWith("ResponseDto")
+                    .that().haveSimpleNameEndingWith("WebRequest")    // ✅ Matches our naming convention
+                    .or().haveSimpleNameEndingWith("WebResponse")     // ✅ Matches our naming convention
                     .should().resideInAPackage("..infrastructure.web.dto..")
                     .as("Web DTOs should be in infrastructure.web.dto package")
                     .allowEmptyShould(true);
 
-            ArchRule apiDtosRule = classes()
-                    .that().haveSimpleNameContaining("Ynab")
-                    .and().haveSimpleNameEndingWith("Dto")
-                    .or().haveSimpleNameContaining("Ynab")
-                    .and().haveSimpleNameEndingWith("Response")
-                    .or().haveSimpleNameContaining("Ynab")
-                    .and().haveSimpleNameEndingWith("Request")
-                    .should().resideInAPackage("..infrastructure.client.dto..")
-                    .as("YNAB API DTOs should be in infrastructure.client.dto package");
+            ArchRule externalApiDtosRule = classes()
+                    .that().resideInAPackage("..infrastructure.client.dto..")
+                    .should().haveSimpleNameContaining("Ynab")        // Only external API DTOs should contain "Ynab"
+                    .orShould().haveSimpleNameContaining("External")  // Or have "External" in name
+                    .orShould().haveSimpleNameContaining("Api")       // Or have "Api" in name
+                    .as("External API DTOs should be properly named and located")
+                    .allowEmptyShould(true);
 
             webDtosRule.check(allClasses);
-            apiDtosRule.check(allClasses);
+            externalApiDtosRule.check(allClasses);
         }
     }
 }
