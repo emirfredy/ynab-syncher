@@ -258,8 +258,8 @@ class ArchitectureTest {
     class LayeredArchitectureTest {
 
         @Test
-        @DisplayName("Hexagonal architecture layers should be respected")
-        void hexagonalArchitectureLayersShouldBeRespected() {
+        @DisplayName("Netflix/Uber microservices pattern layers should be respected")
+        void netflixUberPatternLayersShouldBeRespected() {
             ArchRule rule = layeredArchitecture()
                     .consideringOnlyDependenciesInLayers() // This ignores JDK dependencies
                     
@@ -270,18 +270,20 @@ class ArchitectureTest {
                         "co.personal.ynabsyncher.spi..",
                         "co.personal.ynabsyncher.usecase.."
                     )
+                    // ApplicationServices layer will be added when implemented
                     .layer("WebControllers").definedBy("..infrastructure.web..")
                     .layer("RepositoryAdapters").definedBy("..infrastructure.persistence..")
                     .layer("ClientAdapters").definedBy("..infrastructure.client..")
                     .layer("Configuration").definedBy("..infrastructure.config..")
                     
                     // Define proper access patterns for Netflix/Uber
+                    // WebControllers access will be restricted to ApplicationServices when implemented
                     .whereLayer("RepositoryAdapters").mayOnlyAccessLayers("Domain", "Configuration")
                     .whereLayer("ClientAdapters").mayOnlyAccessLayers("Domain", "Configuration")
-                    .whereLayer("Configuration").mayOnlyAccessLayers("Domain", "ClientAdapters", "RepositoryAdapters")  // Config creates beans
+                    .whereLayer("Configuration").mayOnlyAccessLayers("Domain", "ClientAdapters", "RepositoryAdapters")
                     .whereLayer("Domain").mayNotAccessAnyLayer()
                     
-                    .because("Netflix/Uber microservices pattern should be enforced (ApplicationServices will be added later)");
+                    .because("Netflix/Uber microservices pattern should be enforced (ready for ApplicationServices)");
 
             rule.check(allClasses);
         }
@@ -618,6 +620,90 @@ class ArchitectureTest {
                     .should().dependOnClassesThat().resideInAPackage("..api.usecase..")
                     .orShould().dependOnClassesThat().resideInAPackage("..api.dto..")
                     .as("Client adapters should not access domain API (they implement SPI only)");
+
+            rule.check(allClasses);
+        }
+    }
+
+    @Nested
+    @DisplayName("Production REST API Rules")
+    class ProductionRestApiRules {
+
+        @Test
+        @DisplayName("Controllers should use proper HTTP annotations")
+        void controllersShouldUseProperHttpAnnotations() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..infrastructure.web..")
+                    .and().haveSimpleNameEndingWith("Controller")
+                    .should().beAnnotatedWith("org.springframework.web.bind.annotation.RestController")
+                    .as("REST controllers should use @RestController annotation")
+                    .allowEmptyShould(true);
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Application services should use proper Spring annotations")
+        void applicationServicesShouldUseProperSpringAnnotations() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..infrastructure.service..")
+                    .and().haveSimpleNameEndingWith("ApplicationService")
+                    .should().beAnnotatedWith("org.springframework.stereotype.Service")
+                    .as("Application services should use @Service annotation")
+                    .allowEmptyShould(true);
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Web DTOs should use validation annotations properly")
+        void webDtosShouldUseValidationAnnotationsProperly() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..infrastructure.web.dto..")
+                    .and().haveSimpleNameEndingWith("WebRequest")
+                    .should().onlyAccessClassesThat()
+                    .resideInAnyPackage(
+                        "java..",
+                        "jakarta.validation..",  // Allow validation annotations
+                        "com.fasterxml.jackson..", // Allow JSON annotations
+                        "..infrastructure.web.dto.."
+                    )
+                    .as("Web request DTOs should use validation annotations")
+                    .allowEmptyShould(true);
+
+            rule.check(allClasses);
+        }
+    }
+
+    @Nested
+    @DisplayName("Domain Purity Rules")
+    class DomainPurityRules {
+
+        @Test
+        @DisplayName("Domain use cases should not depend on infrastructure concerns")
+        void domainUseCasesShouldNotDependOnInfrastructureConcerns() {
+            ArchRule rule = noClasses()
+                    .that().resideInAPackage("co.personal.ynabsyncher.usecase..")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                        "..infrastructure..",
+                        "org.springframework.transaction..",  // No @Transactional in domain
+                        "org.springframework.cache..",        // No @Cacheable in domain
+                        "org.springframework.security.."      // No security in domain
+                    )
+                    .because("Domain use cases should remain pure business logic");
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Domain models should not expose infrastructure interfaces")
+        void domainModelsShouldNotExposeInfrastructureInterfaces() {
+            ArchRule rule = noClasses()
+                    .that().resideInAPackage("co.personal.ynabsyncher.model..")
+                    .should().implement("org.springframework.data.repository.Repository")
+                    .orShould().implement("jakarta.persistence.EntityManager")
+                    .orShould().implement("org.springframework.web.bind.annotation.RequestMapping")
+                    .because("Domain models should not implement infrastructure interfaces");
 
             rule.check(allClasses);
         }
