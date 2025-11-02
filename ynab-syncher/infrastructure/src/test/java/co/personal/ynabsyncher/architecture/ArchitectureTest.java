@@ -292,29 +292,28 @@ class ArchitectureTest {
     class TestingArchitecture {
 
         @Test
-        @DisplayName("Test classes should be in same package as tested classes")
-        void testClassesShouldBeInSamePackageAsTestedClasses() {
-            // Verify that test classes follow proper naming and organization
-            // Test classes should have 'Test' suffix and be properly organized
+        @DisplayName("Test classes should follow proper organization")
+        void testClassesShouldFollowProperOrganization() {
+            // Allow nested test classes (they're good practice for organization)
             ArchRule testNamingRule = classes()
                     .that().haveSimpleNameEndingWith("Test")
-                    .and().areNotMemberClasses() // Exclude nested test classes
                     .and().doNotHaveSimpleName("ArchitectureTest") // Exclude this architecture test
                     .should().haveNameMatching(".*Test$")
                     .because("Test classes should follow standard naming convention with 'Test' suffix");
 
-            // Verify test classes are in appropriate packages relative to what they test
-            // Use noClasses to exclude architecture package
-            ArchRule packageStructureRule = noClasses()
+            // Verify test classes don't pollute production packages  
+            ArchRule testPackageRule = noClasses()
                     .that().haveSimpleNameEndingWith("Test")
                     .and().doNotHaveSimpleName("ArchitectureTest")
-                    .and().areNotMemberClasses()
-                    .and().resideInAPackage("co.personal.ynabsyncher..")
-                    .should().resideInAPackage("..architecture..")
-                    .because("Test classes should not be in architecture package except for ArchitectureTest");
+                    .and().areNotMemberClasses()  // Allow nested test classes
+                    .should().resideInAPackage("co.personal.ynabsyncher.model..")
+                    .orShould().resideInAPackage("co.personal.ynabsyncher.api..")
+                    .orShould().resideInAPackage("co.personal.ynabsyncher.spi..")
+                    .orShould().resideInAPackage("co.personal.ynabsyncher.usecase..")
+                    .because("Test classes should not be in domain packages (use test source sets)");
 
             testNamingRule.check(allClasses);
-            packageStructureRule.check(allClasses);
+            testPackageRule.check(allClasses);
         }
     }
 
