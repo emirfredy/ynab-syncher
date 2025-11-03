@@ -9,6 +9,7 @@ This directory contains utility scripts for the YNAB-Syncher project.
 A comprehensive script for safely merging feature branches to master and pushing to GitHub.
 
 **Features:**
+
 - ✅ **Safety Checks**: Validates git repo, remote, and uncommitted changes
 - ✅ **Test Execution**: Runs full test suite before merging
 - ✅ **Interactive Prompts**: Confirms operations and offers branch cleanup
@@ -16,6 +17,7 @@ A comprehensive script for safely merging feature branches to master and pushing
 - ✅ **Colored Output**: Easy-to-read status messages
 
 **Usage:**
+
 ```bash
 # Merge current branch to master
 ./scripts/merge-to-master.sh
@@ -32,17 +34,19 @@ A comprehensive script for safely merging feature branches to master and pushing
 A validation script that checks all prerequisites for merging without performing any actual git operations.
 
 **Features:**
+
 - ✅ **Safe Validation**: No actual git operations performed
 - ✅ **Prerequisite Checks**: Validates all requirements
 - ✅ **Preview Commands**: Shows exactly what would be executed
 - ✅ **Quick Feedback**: Fast validation before running the actual merge
 
 **Usage:**
+
 ```bash
 # Validate current branch for merging
 ./scripts/dry-run-merge.sh
 
-# Validate specific branch for merging  
+# Validate specific branch for merging
 ./scripts/dry-run-merge.sh feature/new-feature
 
 # Show help
@@ -50,6 +54,7 @@ A validation script that checks all prerequisites for merging without performing
 ```
 
 **What it does:**
+
 1. Validates prerequisites (git repo, remote, no uncommitted changes)
 2. Runs full test suite on the source branch
 3. Switches to master and pulls latest changes
@@ -58,12 +63,14 @@ A validation script that checks all prerequisites for merging without performing
 6. Optionally deletes local and remote feature branches
 
 **Prerequisites:**
+
 - Must be in a Git repository
-- Must have 'origin' remote configured  
+- Must have 'origin' remote configured
 - No uncommitted changes
 - All tests must pass
 
 **Safety Features:**
+
 - Validates all prerequisites before starting
 - Runs tests to prevent broken code from reaching master
 - Uses `--no-ff` merge to preserve branch history
@@ -76,20 +83,60 @@ This script follows Git Flow best practices and ensures that only tested, workin
 
 The YNAB Syncher project includes comprehensive test and validation scripts built with Hexagonal Architecture principles.
 
-### `run-tests.sh` - Full Comprehensive Test Suite
+### `run-tests.sh` - Enhanced Test Automation
 
-**Complete validation including mutation testing (takes 5-10 minutes)**
+**Production-grade test script with advanced command-line interface**
+
+#### 🚀 Basic Usage
 
 ```bash
-./run-tests.sh
+# Complete validation (all tests)
+./scripts/run-tests.sh
+
+# Quick development feedback (essential tests only)
+./scripts/run-tests.sh --quick
+
+# Show all available options
+./scripts/run-tests.sh --help
 ```
 
-### `run-tests.sh --quick` - Essential Test Suite
+#### ⚡ Command-Line Options
 
-**Quick validation of core functionality (takes 1-2 minutes)**
+| Option            | Description                           | Example                                  |
+| ----------------- | ------------------------------------- | ---------------------------------------- |
+| `--quick`         | Run essential tests only (1-2 min)    | `./run-tests.sh --quick`                 |
+| `--fail-fast`     | Stop on first failure with debug info | `./run-tests.sh --fail-fast`             |
+| `--only <types>`  | Run specific test categories          | `./run-tests.sh --only unit integration` |
+| `--module <name>` | Target specific module                | `./run-tests.sh --module domain`         |
+| `--verbose, -v`   | Enable detailed output                | `./run-tests.sh --verbose`               |
+| `--help, -h`      | Show comprehensive help               | `./run-tests.sh --help`                  |
+
+#### 🎯 Available Test Types
+
+- **`architecture`** - ArchUnit compliance tests
+- **`unit`** - Domain unit tests
+- **`integration`** - Infrastructure integration tests
+- **`mutation`** - PIT mutation testing
+- **`wiremock`** - WireMock integration tests
+- **`build`** - Full build verification
+
+#### 📝 Common Usage Patterns
 
 ```bash
-./run-tests.sh --quick
+# Architecture validation only
+./scripts/run-tests.sh --only architecture
+
+# Domain module unit tests with immediate failure feedback
+./scripts/run-tests.sh --only unit --module domain --fail-fast
+
+# Unit and integration tests (skip slow mutation testing)
+./scripts/run-tests.sh --only unit integration
+
+# Infrastructure module with verbose output
+./scripts/run-tests.sh --module infrastructure --verbose
+
+# Quick tests with fail-fast for rapid development
+./scripts/run-tests.sh --quick --fail-fast
 ```
 
 **What it runs:**
@@ -142,10 +189,44 @@ ALL TEST SUITES PASSED!
 
 ### ⚡ Quick Mode (`--quick` flag)
 
-- Runs only essential tests (Architecture, Unit, Integration)
-- Skips time-intensive operations (mutation testing, full build)
+- Runs only essential tests (Architecture, Unit, Integration, WireMock, Build)
+- Skips time-intensive operations (mutation testing)
 - Completes in 1-2 minutes vs 5-10 minutes for full suite
 - Perfect for development workflow and CI/CD pipelines
+
+### 🎯 Intelligent Test Filtering
+
+The script provides smart test selection based on your needs:
+
+#### Module-Based Filtering (`--module`)
+
+- **`domain`** - Runs only domain-related tests (architecture, unit, mutation)
+- **`infrastructure`** - Runs only infrastructure tests (architecture, integration, wiremock, build)
+
+#### Test Type Filtering (`--only`)
+
+- **Single Type**: `--only unit` (domain unit tests only)
+- **Multiple Types**: `--only unit integration` (unit and integration tests)
+- **Quick Combinations**: `--only architecture unit` (fast essential validation)
+
+#### Smart Skipping Logic
+
+- Module filters automatically exclude irrelevant tests
+- Quick mode automatically skips slow mutation testing
+- Verbose mode shows exactly what's being skipped and why
+
+#### Configuration Display (`--verbose`)
+
+Shows active configuration before test execution:
+
+```bash
+🔧 CONFIGURATION:
+   Quick Mode: true
+   Fail Fast: true
+   Only Tests: unit integration
+   Target Module: domain
+   Verbose: true
+```
 
 ### 📊 Dynamic Data Extraction
 
@@ -167,6 +248,45 @@ ALL TEST SUITES PASSED!
 - **Graceful Failures**: Continues execution even if individual tests fail
 - **Exit Codes**: Proper return codes for CI/CD integration
 - **Debug Information**: Detailed output for troubleshooting
+
+### 🚨 Enhanced Fail-Fast Mode
+
+The `--fail-fast` option provides immediate feedback with intelligent debugging:
+
+#### Contextual Error Analysis
+
+- **Architecture Failures**: ArchUnit violation guidance and suggested fixes
+- **Unit Test Failures**: Domain logic debugging with targeted commands
+- **Integration Failures**: Infrastructure and external dependency troubleshooting
+- **Mutation Failures**: Test coverage improvement suggestions
+
+#### Smart Debug Commands
+
+```bash
+# Example fail-fast output for architecture test failure:
+💥 FAIL-FAST MODE: Stopping execution on first failure
+
+📋 FAILURE DETAILS:
+   Test: Architecture Tests (ArchUnit)
+   Exit Code: 1
+
+🔧 SUGGESTED ACTIONS:
+   • Check ArchUnit violations in test output
+   • Review layer dependencies and package structure
+   • Run: mvn test -Dtest=ArchitectureTest
+
+🔍 DEBUG COMMANDS:
+   • Verbose mode: ./run-tests.sh --verbose
+   • Single test: ./run-tests.sh --only architecture
+   • Module only: ./run-tests.sh --module infrastructure
+```
+
+#### Immediate Troubleshooting
+
+- **Last 20 Lines**: Displays recent output in verbose mode
+- **Contextual Commands**: Provides exact commands to debug the specific failure
+- **Actionable Suggestions**: Lists specific steps to resolve the issue
+- **Quick Retry**: Shows commands to re-run just the failed test
 
 ## 🏗️ What Each Test Category Validates
 
@@ -295,40 +415,67 @@ mvn clean test jacoco:report
 ### Development Workflow
 
 ```bash
-# Quick check during development
-./run-tests.sh --quick
+# Quick check during development (fastest feedback)
+./scripts/run-tests.sh --quick --fail-fast
 
-# Full validation before commit
-./run-tests.sh
+# Architecture validation before commit
+./scripts/run-tests.sh --only architecture --fail-fast
+
+# Domain-specific testing during feature development
+./scripts/run-tests.sh --module domain --verbose
+
+# Full validation before pull request
+./scripts/run-tests.sh
 ```
 
 ### CI/CD Integration
 
 ```bash
-# Fast feedback for pull requests
-./run-tests.sh --quick
+# Fast feedback for pull requests (essential tests)
+./scripts/run-tests.sh --quick --fail-fast
 
-# Complete validation for main branch
-./run-tests.sh
+# Complete validation for main branch merge
+./scripts/run-tests.sh --fail-fast
+
+# Architecture enforcement in pre-commit hooks
+./scripts/run-tests.sh --only architecture --fail-fast
+```
+
+### Debugging & Troubleshooting
+
+```bash
+# Focus on failing test category with immediate feedback
+./scripts/run-tests.sh --only unit --fail-fast --verbose
+
+# Module-specific debugging
+./scripts/run-tests.sh --module infrastructure --fail-fast
+
+# Multiple test types with detailed output
+./scripts/run-tests.sh --only unit integration --verbose
 ```
 
 ### Manual Test Categories
 
 ```bash
 # Architecture tests only
-mvn test -pl infrastructure -Dtest=ArchitectureTest
+./scripts/run-tests.sh --only architecture
+# OR: mvn test -pl infrastructure -Dtest=ArchitectureTest
 
 # Domain unit tests only
-mvn -pl domain clean test
+./scripts/run-tests.sh --only unit --module domain
+# OR: mvn -pl domain clean test
 
 # Infrastructure integration tests only
-mvn -pl infrastructure clean test
+./scripts/run-tests.sh --only integration --module infrastructure
+# OR: mvn -pl infrastructure clean test
 
-# Code coverage with real percentages
-mvn clean test jacoco:report
+# Mutation testing only (with timeout protection)
+./scripts/run-tests.sh --only mutation
+# OR: mvn -pl domain org.pitest:pitest-maven:mutationCoverage
 
-# Mutation testing with timeout protection
-mvn -pl domain org.pitest:pitest-maven:mutationCoverage
+# Full build verification only
+./scripts/run-tests.sh --only build
+# OR: mvn clean verify
 ```
 
 ## 🏆 Enterprise-Grade Quality
@@ -345,9 +492,33 @@ The comprehensive test suite ensures:
 
 ## 🎯 Next Steps
 
-1. **Run Quick Tests**: `./run-tests.sh --quick` for rapid feedback
-2. **Full Validation**: `./run-tests.sh` before commits
-3. **Coverage Analysis**: Review JaCoCo HTML reports in `target/site/jacoco/`
-4. **Mutation Testing**: Check PIT reports in `domain/target/pit-reports/`
+### Quick Start Development Workflow
 
-The testing infrastructure provides real-time, accurate metrics to ensure code quality and architectural compliance!
+1. **Rapid Feedback**: `./scripts/run-tests.sh --quick --fail-fast` for immediate development feedback
+2. **Architecture Validation**: `./scripts/run-tests.sh --only architecture` before making structural changes
+3. **Module-Specific Testing**: `./scripts/run-tests.sh --module domain` when working on business logic
+4. **Pre-Commit Validation**: `./scripts/run-tests.sh --fail-fast` for comprehensive validation
+
+### Debugging Failed Tests
+
+1. **Use Fail-Fast**: Add `--fail-fast` to any command for immediate error analysis
+2. **Enable Verbose Mode**: Add `--verbose` to see detailed execution information
+3. **Target Specific Tests**: Use `--only <type>` to focus on failing test categories
+4. **Module Isolation**: Use `--module <name>` to isolate domain vs infrastructure issues
+
+### Code Quality Analysis
+
+1. **Coverage Analysis**: Review JaCoCo HTML reports in `target/site/jacoco/`
+2. **Mutation Testing**: Check PIT reports in `domain/target/pit-reports/`
+3. **Architecture Compliance**: Use `./scripts/run-tests.sh --only architecture --verbose` for detailed ArchUnit analysis
+
+### CI/CD Integration
+
+The enhanced script is designed for production CI/CD pipelines:
+
+- **Exit Codes**: Proper return codes for automated failure detection
+- **Timeout Protection**: Built-in timeouts prevent hanging builds
+- **Selective Testing**: Use `--quick` for fast PR validation, full mode for main branch
+- **Fail-Fast**: Use `--fail-fast` in CI to get immediate feedback on failures
+
+The testing infrastructure provides real-time, accurate metrics with intelligent debugging to ensure code quality and architectural compliance!
