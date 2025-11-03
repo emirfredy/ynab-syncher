@@ -286,4 +286,296 @@ class YnabSyncControllerTest {
                 .andExpect(status().isInternalServerError())
                 .andExpect(header().exists("X-Correlation-ID"));
     }
+
+    // ==============================================================================
+    // HIGH PRIORITY VALIDATION TESTS - Bean Validation for Nested Objects
+    // ==============================================================================
+
+    @Test
+    @DisplayName("Should return 400 for invalid BankTransactionWebData fields")
+    void shouldReturn400ForInvalidBankTransactionFields() throws Exception {
+        // Given - Invalid transaction with blank required fields
+        BankTransactionWebData invalidTransaction = new BankTransactionWebData(
+                "", // blank date - should fail @NotBlank
+                "", // blank description - should fail @NotBlank
+                "", // blank amount - should fail @NotBlank
+                "Valid Merchant" // merchantName is optional
+        );
+        
+        ImportBankTransactionsWebRequest request = new ImportBankTransactionsWebRequest(
+                List.of(invalidTransaction)
+        );
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/import")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().exists("X-Correlation-ID"))
+                .andExpect(jsonPath("$.title").value("Request Validation Error"));
+    }
+
+    @Test
+    @DisplayName("Should return 400 for invalid confidence values in category mappings")
+    void shouldReturn400ForInvalidConfidenceValues() throws Exception {
+        // Given - Invalid mapping with confidence > 1.0
+        CategoryMappingWebData invalidMapping = new CategoryMappingWebData(
+                "mapping-123",
+                "category-456",
+                "Dining",
+                List.of("starbucks", "coffee"),
+                BigDecimal.valueOf(1.5), // > 1.0, should fail @DecimalMax
+                "ML_INFERENCE"
+        );
+        
+        SaveCategoryMappingsWebRequest request = new SaveCategoryMappingsWebRequest(
+                List.of(invalidMapping)
+        );
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/reconciliation/category-mappings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().exists("X-Correlation-ID"))
+                .andExpect(jsonPath("$.title").value("Request Validation Error"));
+    }
+
+    @Test
+    @DisplayName("Should return 400 for negative confidence values in category mappings")
+    void shouldReturn400ForNegativeConfidenceValues() throws Exception {
+        // Given - Invalid mapping with negative confidence
+        CategoryMappingWebData invalidMapping = new CategoryMappingWebData(
+                "mapping-123",
+                "category-456", 
+                "Dining",
+                List.of("pattern"),
+                BigDecimal.valueOf(-0.1), // < 0.0, should fail @DecimalMin
+                "ML_INFERENCE"
+        );
+        
+        SaveCategoryMappingsWebRequest request = new SaveCategoryMappingsWebRequest(
+                List.of(invalidMapping)
+        );
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/reconciliation/category-mappings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().exists("X-Correlation-ID"))
+                .andExpect(jsonPath("$.title").value("Request Validation Error"));
+    }
+
+    @Test
+    @DisplayName("Should return 400 for blank category fields in category mappings")
+    void shouldReturn400ForBlankCategoryFields() throws Exception {
+        // Given - Invalid mapping with blank required fields
+        CategoryMappingWebData invalidMapping = new CategoryMappingWebData(
+                "mapping-123",
+                "", // blank categoryId - should fail @NotBlank
+                "", // blank categoryName - should fail @NotBlank
+                List.of("pattern"),
+                BigDecimal.valueOf(0.95),
+                "ML_INFERENCE"
+        );
+        
+        SaveCategoryMappingsWebRequest request = new SaveCategoryMappingsWebRequest(
+                List.of(invalidMapping)
+        );
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/reconciliation/category-mappings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().exists("X-Correlation-ID"))
+                .andExpect(jsonPath("$.title").value("Request Validation Error"));
+    }
+
+    // ==============================================================================
+    // DATE RANGE VALIDATION TESTS
+    // ==============================================================================
+
+    @Test
+    @DisplayName("Should return 400 for null dates in reconciliation request")
+    void shouldReturn400ForNullDatesInReconciliation() throws Exception {
+        // Given - Request with null dates (using JSON with null values)
+        String requestWithNullDates = """
+                {
+                    "fromDate": null,
+                    "toDate": null,
+                    "reconciliationStrategy": "STRICT"
+                }
+                """;
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/reconcile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestWithNullDates))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().exists("X-Correlation-ID"))
+                .andExpect(jsonPath("$.title").value("Request Validation Error"));
+    }
+
+    @Test
+    @DisplayName("Should return 400 for blank reconciliation strategy")
+    void shouldReturn400ForBlankReconciliationStrategy() throws Exception {
+        // Given - Request with blank strategy
+        ReconcileTransactionsWebRequest request = new ReconcileTransactionsWebRequest(
+                LocalDate.of(2024, 1, 1),
+                LocalDate.of(2024, 1, 31),
+                "" // blank strategy - should fail @NotBlank
+        );
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/reconcile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().exists("X-Correlation-ID"))
+                .andExpect(jsonPath("$.title").value("Request Validation Error"));
+    }
+
+    // ==============================================================================
+    // BUSINESS FIELD VALIDATION TESTS
+    // ==============================================================================
+
+    @Test
+    @DisplayName("Should return 400 for blank budgetId in infer categories")
+    void shouldReturn400ForBlankBudgetIdInInferCategories() throws Exception {
+        // Given - Request with blank budgetId
+        InferCategoriesWebRequest request = new InferCategoriesWebRequest(
+                "", // blank budgetId - should fail @NotBlank
+                List.of(new BankTransactionWebData("2024-01-15", "Test", "100.00", "Merchant"))
+        );
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/infer-categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().exists("X-Correlation-ID"))
+                .andExpect(jsonPath("$.title").value("Request Validation Error"));
+    }
+
+    @Test
+    @DisplayName("Should return 400 for blank budgetId in create missing transactions")
+    void shouldReturn400ForBlankBudgetIdInCreateMissing() throws Exception {
+        // Given - Request with blank budgetId
+        CreateMissingTransactionsWebRequest request = new CreateMissingTransactionsWebRequest(
+                "", // blank budgetId - should fail @NotBlank
+                "ynab-account-456",
+                List.of(new BankTransactionWebData("2024-01-15", "Test", "100.00", "Merchant"))
+        );
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/create-missing")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().exists("X-Correlation-ID"))
+                .andExpect(jsonPath("$.title").value("Request Validation Error"));
+    }
+
+    @Test
+    @DisplayName("Should return 400 for blank ynabAccountId in create missing transactions")
+    void shouldReturn400ForBlankYnabAccountId() throws Exception {
+        // Given - Request with blank ynabAccountId
+        CreateMissingTransactionsWebRequest request = new CreateMissingTransactionsWebRequest(
+                "budget-123",
+                "", // blank ynabAccountId - should fail @NotBlank
+                List.of(new BankTransactionWebData("2024-01-15", "Test", "100.00", "Merchant"))
+        );
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/create-missing")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().exists("X-Correlation-ID"))
+                .andExpect(jsonPath("$.title").value("Request Validation Error"));
+    }
+
+    // ==============================================================================
+    // CONTENT-TYPE AND HTTP PROTOCOL VALIDATION TESTS
+    // ==============================================================================
+
+    @Test
+    @DisplayName("Should return 500 for unsupported media type (current implementation)")
+    void shouldReturn500ForUnsupportedMediaType() throws Exception {
+        // Given - Valid request but wrong content type
+        ImportBankTransactionsWebRequest request = new ImportBankTransactionsWebRequest(
+                List.of(new BankTransactionWebData("2024-01-15", "Test", "100.00", "Merchant"))
+        );
+
+        // When & Then - Current implementation returns 500 due to HttpMediaTypeNotSupportedException
+        mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/import")
+                        .contentType(MediaType.TEXT_PLAIN) // Wrong content type
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isInternalServerError()) // Current behavior
+                .andExpect(header().exists("X-Correlation-ID"));
+    }
+
+    @Test
+    @DisplayName("Should return 500 for malformed JSON request body (current implementation)")
+    void shouldReturn500ForMalformedJsonRequestBody() throws Exception {
+        // Given - Invalid JSON syntax
+        String malformedJson = "{ invalid json syntax }";
+
+        // When & Then - Current implementation returns 500 due to HttpMessageNotReadableException
+        mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/import")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(malformedJson))
+                .andExpect(status().isInternalServerError()) // Current behavior
+                .andExpect(header().exists("X-Correlation-ID"));
+    }
+
+    @Test
+    @DisplayName("Should return 500 for missing request body (current implementation)")
+    void shouldReturn500ForMissingRequestBody() throws Exception {
+        // When & Then - Current implementation returns 500 due to HttpMessageNotReadableException
+        mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/import")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError()) // Current behavior
+                .andExpect(header().exists("X-Correlation-ID"));
+    }
+
+    @Test
+    @DisplayName("Should return 400 for null transactions list in infer categories")
+    void shouldReturn400ForNullTransactionsListInInferCategories() throws Exception {
+        // Given - Request with null transactions (using JSON with null)
+        String requestWithNullTransactions = """
+                {
+                    "budgetId": "budget-123",
+                    "transactions": null
+                }
+                """;
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/infer-categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestWithNullTransactions))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().exists("X-Correlation-ID"))
+                .andExpect(jsonPath("$.title").value("Request Validation Error"));
+    }
+
+    @Test
+    @DisplayName("Should return 400 for empty transactions list in infer categories")
+    void shouldReturn400ForEmptyTransactionsListInInferCategories() throws Exception {
+        // Given - Request with empty transactions list
+        InferCategoriesWebRequest request = new InferCategoriesWebRequest(
+                "budget-123",
+                List.of() // empty list - should fail @NotEmpty
+        );
+
+        // When & Then
+        mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/infer-categories")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(header().exists("X-Correlation-ID"))
+                .andExpect(jsonPath("$.title").value("Request Validation Error"));
+    }
 }
