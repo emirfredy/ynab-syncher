@@ -103,9 +103,18 @@ Act as a world-class peer developer and architect. Assume expert-level knowledge
 
 **CRITICAL: Task Completion Validation**
 
-- **Quick Validation**: Run `./scripts/run-tests.sh --quick` and ensure no warnings or errors
-- **Full Validation**: Run `./scripts/run-tests.sh` and ensure no warnings or errors
-- **Both must pass** before considering any implementation task complete
+- **Quick Validation**: Run `./scripts/run-tests.sh --quick --fail-fast` for rapid feedback
+- **Architecture Validation**: Run `./scripts/run-tests.sh --only architecture --fail-fast` before structural changes
+- **Module-Specific**: Run `./scripts/run-tests.sh --module domain --fail-fast` for domain changes
+- **Full Validation**: Run `./scripts/run-tests.sh --fail-fast` for comprehensive validation
+- **All must pass** before considering any implementation task complete
+
+**Enhanced Testing Options:**
+
+- Use `--fail-fast` for immediate error feedback with debugging suggestions
+- Use `--only <types>` to focus on specific test categories (`architecture`, `unit`, `integration`, `mutation`)
+- Use `--module <name>` to target `domain` or `infrastructure` modules
+- Use `--verbose` for detailed execution information
 
 ## Module Structure & Technology Specifics
 
@@ -167,19 +176,30 @@ mvn -pl domain org.pitest:pitest-maven:mutationCoverage
 ./scripts/run-tests.sh
 ```
 
-**run-tests.sh Script Usage:**
+**run-tests.sh Enhanced Script Usage:**
 
 ```bash
-# Quick test execution (architecture + unit + integration tests)
-./scripts/run-tests.sh --quick
+# Quick development feedback (essential tests only)
+./scripts/run-tests.sh --quick --fail-fast
+
+# Architecture validation before structural changes
+./scripts/run-tests.sh --only architecture --fail-fast
+
+# Domain-specific testing during feature development
+./scripts/run-tests.sh --module domain --fail-fast
+
+# Unit and integration tests with detailed output
+./scripts/run-tests.sh --only unit integration --verbose
 
 # Full comprehensive test suite (includes mutation testing)
-./scripts/run-tests.sh
+./scripts/run-tests.sh --fail-fast
 ```
 
-**Script Benefits:**
+**Enhanced Script Benefits:**
 
-- **Quick Feedback**: `--quick` flag skips slow mutation testing for fast feedback
+- **Fail-Fast Mode**: `--fail-fast` provides immediate error feedback with debugging suggestions
+- **Intelligent Filtering**: `--only <types>` and `--module <name>` for targeted testing
+- **Quick Feedback**: `--quick` flag skips slow mutation testing for rapid development cycles
 - **Comprehensive Validation**: Full execution includes mutation testing and coverage analysis
 - **Parallel Execution**: Runs tests across modules simultaneously
 - **Detailed Reporting**: Comprehensive test results summary with timing and metrics

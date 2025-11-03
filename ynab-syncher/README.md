@@ -7,7 +7,7 @@ A hexagonal architecture application for synchronizing bank transactions with YN
 ```
 ynab-syncher/
 ├── domain/           # Framework-free business logic
-├── infrastructure/   # Spring Boot application & adapters  
+├── infrastructure/   # Spring Boot application & adapters
 ├── scripts/          # Utility scripts for development
 └── pom.xml          # Multi-module Maven configuration
 ```
@@ -36,6 +36,24 @@ See [`scripts/README.md`](scripts/README.md) for detailed documentation.
 
 ## Building & Testing
 
+### Quick Start
+
+```bash
+# Quick test execution (recommended for development)
+./scripts/run-tests.sh --quick
+
+# Full comprehensive test suite
+./scripts/run-tests.sh
+
+# Architecture tests only
+./scripts/run-tests.sh --only architecture
+
+# Domain module tests with fail-fast
+./scripts/run-tests.sh --module domain --fail-fast
+```
+
+### Manual Maven Commands
+
 ```bash
 # Build entire project
 mvn clean compile
@@ -50,6 +68,19 @@ mvn verify
 mvn -pl domain clean test
 mvn -pl infrastructure clean test
 ```
+
+### Enhanced Test Script Features
+
+The `run-tests.sh` script provides production-grade test automation with:
+
+- **`--quick`** - Essential tests only (1-2 minutes)
+- **`--fail-fast`** - Stop on first failure with debugging suggestions
+- **`--only <types>`** - Run specific test categories (`architecture`, `unit`, `integration`, `mutation`, `wiremock`, `build`)
+- **`--module <name>`** - Target specific module (`domain` or `infrastructure`)
+- **`--verbose`** - Detailed execution information
+- **`--help`** - Comprehensive usage guide
+
+See [`scripts/README.md`](scripts/README.md) for complete documentation.
 
 ## Architecture
 
