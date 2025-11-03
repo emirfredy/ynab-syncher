@@ -98,11 +98,21 @@ The `run-tests.sh` script provides production-grade test automation with:
 - **Smart Dependency Management** - Independent tests run in parallel, dependent tests run sequentially
 - **Performance Boost** - Up to 60% faster execution in parallel mode
 
+**Interactive Development Mode (Phase 3):**
+
+- **`--interactive`** - TUI-based test selection menu with real-time status display
+- **Last Test Results** - Shows status of previously executed tests with pass/fail indicators
+- **Quick Selection** - Easy access to common test combinations (quick feedback, architecture validation, etc.)
+- **Future-Ready** - Prepared for watch mode, cache management, and quality dashboard features
+
 **Usage Examples:**
 
 ```bash
 # Development workflow - quick feedback with parallel execution
 ./scripts/run-tests.sh --quick --parallel --fail-fast
+
+# Interactive development mode (Phase 3) - TUI test selection
+./scripts/run-tests.sh --interactive
 
 # Architecture validation before structural changes
 ./scripts/run-tests.sh --only architecture --fail-fast

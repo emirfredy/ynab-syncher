@@ -179,6 +179,9 @@ mvn -pl domain org.pitest:pitest-maven:mutationCoverage
 **run-tests.sh Enhanced Script Usage:**
 
 ```bash
+# Interactive development mode (Phase 3) - TUI test selection
+./scripts/run-tests.sh --interactive
+
 # Quick development feedback with parallel execution (fastest)
 ./scripts/run-tests.sh --quick --parallel --fail-fast
 
@@ -200,6 +203,7 @@ mvn -pl domain org.pitest:pitest-maven:mutationCoverage
 
 **Enhanced Script Benefits:**
 
+- **Interactive Development Mode**: `--interactive` provides TUI-based test selection with real-time status display
 - **Fail-Fast Mode**: `--fail-fast` provides immediate error feedback with debugging suggestions
 - **Intelligent Filtering**: `--only <types>` and `--module <name>` for targeted testing
 - **Quick Feedback**: `--quick` flag skips slow mutation testing for rapid development cycles

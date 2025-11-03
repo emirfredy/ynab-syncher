@@ -37,6 +37,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 # Configuration flags
@@ -50,6 +51,9 @@ QUICK_MODE=false
 PARALLEL_MODE=false
 MAX_PARALLEL_JOBS=0
 
+# Phase 3: Interactive development mode flags
+INTERACTIVE_MODE=false
+
 # Show usage information
 show_usage() {
     echo "Usage: $0 [OPTIONS]"
@@ -62,6 +66,7 @@ show_usage() {
     echo "  --verbose, -v        Enable verbose output"
     echo "  --parallel           Enable parallel test execution (60% faster)"
     echo "  --jobs <n>           Maximum parallel jobs (default: auto-detect)"
+    echo "  --interactive, -i    Interactive test selection menu"
     echo "  --help, -h           Show this help message"
     echo ""
     echo "AVAILABLE TEST TYPES:"
@@ -76,6 +81,7 @@ show_usage() {
     echo "  $0                              # Run all tests"
     echo "  $0 --quick                      # Quick development feedback"
     echo "  $0 --fail-fast                  # Stop on first failure"
+    echo "  $0 --interactive                # Interactive test selection menu"
     echo "  $0 --only architecture          # Run only architecture tests"
     echo "  $0 --only unit integration      # Run unit and integration tests"
     echo "  $0 --module domain              # Run only domain module tests"
@@ -134,6 +140,10 @@ parse_arguments() {
                 ;;
             --verbose|-v)
                 VERBOSE=true
+                shift
+                ;;
+            --interactive|-i)
+                INTERACTIVE_MODE=true
                 shift
                 ;;
             --help|-h)
@@ -307,6 +317,230 @@ print_header() {
     echo -e "\n${BLUE}==================================================================================${NC}"
     echo -e "${WHITE}$1${NC}"
     echo -e "${BLUE}==================================================================================${NC}\n"
+}
+
+# =============================================================================
+# PHASE 3: INTERACTIVE DEVELOPMENT MODE
+# =============================================================================
+
+# Display the last test results status
+display_last_test_results() {
+    echo -e "${WHITE}📊 Last Test Results:${NC}"
+    
+    # Check if we have any results
+    if [[ ${#test_results[@]} -eq 0 ]]; then
+        echo -e "   ${CYAN}No tests have been run yet${NC}"
+        return
+    fi
+    
+    # Display results in a compact format
+    local categories=("Architecture Tests (ArchUnit)" "Unit Tests (Domain)" "Integration Tests (Infrastructure)" "WireMock Integration Tests" "Mutation Testing (PIT)" "Full Build Verification")
+    
+    for category in "${categories[@]}"; do
+        local status="${test_results[$category]:-SKIP}"
+        local count="${test_counts[$category]:-N/A}"
+        local duration="${test_durations[$category]:-N/A}"
+        
+        if [[ "$status" != "SKIP" ]]; then
+            local status_colored=$(colorize_status "$status")
+            printf "   %-35s %s" "$category:" "$status_colored"
+            if [[ "$count" != "N/A" ]]; then
+                printf " (%s tests" "$count"
+                if [[ "$duration" != "N/A" ]]; then
+                    printf ", %s)" "$duration"
+                else
+                    printf ")"
+                fi
+            fi
+            echo ""
+        fi
+    done
+    
+    if [[ ${#test_results[@]} -eq 0 ]]; then
+        echo -e "   ${CYAN}No recent test results${NC}"
+    fi
+}
+
+# Handle interactive menu choice
+handle_interactive_choice() {
+    local choice="$1"
+    
+    case "$choice" in
+        "1")
+            echo -e "${CYAN}🚀 Running quick feedback tests...${NC}"
+            clear
+            run_tests_with_options --quick --parallel --fail-fast
+            pause_for_user
+            ;;
+        "2")
+            echo -e "${CYAN}🏗️ Running architecture validation...${NC}"
+            clear
+            run_tests_with_options --only architecture --fail-fast
+            pause_for_user
+            ;;
+        "3")
+            echo -e "${CYAN}🧪 Running domain unit tests...${NC}"
+            clear
+            run_tests_with_options --module domain --only unit --parallel
+            pause_for_user
+            ;;
+        "4")
+            echo -e "${CYAN}🔧 Running infrastructure integration tests...${NC}"
+            clear
+            run_tests_with_options --module infrastructure --only integration
+            pause_for_user
+            ;;
+        "5")
+            echo -e "${CYAN}🎲 Running mutation testing (this will take a few minutes)...${NC}"
+            clear
+            run_tests_with_options --only mutation
+            pause_for_user
+            ;;
+        "6")
+            echo -e "${CYAN}📈 Running coverage analysis...${NC}"
+            clear
+            run_tests_with_options --only unit integration
+            pause_for_user
+            ;;
+        "7")
+            echo -e "${CYAN}⚡ Running full parallel test suite...${NC}"
+            clear
+            run_tests_with_options --parallel --fail-fast
+            pause_for_user
+            ;;
+        "8")
+            echo -e "${CYAN}👁️ Entering watch mode...${NC}"
+            echo -e "${YELLOW}⚠️  Watch mode is planned for a future release${NC}"
+            echo -e "${CYAN}For now, you can use: ${WHITE}./scripts/run-tests.sh --quick --parallel --fail-fast${NC}"
+            pause_for_user
+            ;;
+        "9")
+            echo -e "${CYAN}🔧 Cache management...${NC}"
+            echo -e "${YELLOW}⚠️  Cache management is planned for a future release${NC}"
+            pause_for_user
+            ;;
+        "a"|"A")
+            echo -e "${CYAN}📋 Configuration profiles...${NC}"
+            echo -e "${YELLOW}⚠️  Configuration profiles are planned for a future release${NC}"
+            pause_for_user
+            ;;
+        "b"|"B")
+            echo -e "${CYAN}📊 Quality dashboard...${NC}"
+            echo -e "${YELLOW}⚠️  Quality dashboard is planned for a future release${NC}"
+            pause_for_user
+            ;;
+        "c"|"C")
+            echo -e "${CYAN}📈 Trend analysis...${NC}"
+            echo -e "${YELLOW}⚠️  Trend analysis is planned for a future release${NC}"
+            pause_for_user
+            ;;
+        "d"|"D")
+            echo -e "${CYAN}🔍 Test impact analysis...${NC}"
+            echo -e "${YELLOW}⚠️  Test impact analysis is planned for a future release${NC}"
+            pause_for_user
+            ;;
+        "q"|"Q"|"quit"|"exit")
+            echo -e "${GREEN}👋 Goodbye!${NC}"
+            exit 0
+            ;;
+        "")
+            # Empty input, just redraw menu
+            ;;
+        *)
+            echo -e "${RED}❌ Invalid option: $choice${NC}"
+            echo -e "${YELLOW}Please select a valid option (1-9, a-d, or q to quit)${NC}"
+            pause_for_user
+            ;;
+    esac
+}
+
+# Run tests with specific options (used by interactive mode)
+run_tests_with_options() {
+    # Store current settings
+    local old_quick="$QUICK_MODE"
+    local old_fail_fast="$FAIL_FAST"
+    local old_only="$ONLY_TESTS"
+    local old_module="$TARGET_MODULE"
+    local old_parallel="$PARALLEL_MODE"
+    local old_verbose="$VERBOSE"
+    
+    # Reset settings
+    QUICK_MODE=false
+    FAIL_FAST=false
+    ONLY_TESTS=""
+    TARGET_MODULE=""
+    PARALLEL_MODE=false
+    VERBOSE=false
+    
+    # Parse the provided options
+    parse_arguments "$@"
+    
+    # Setup parallel execution based on new settings
+    setup_parallel_execution
+    
+    # Show simplified header for interactive mode
+    echo -e "${BLUE}╔══════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║                         YNAB Syncher Test Suite                     ║${NC}"
+    echo -e "${BLUE}╚══════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    
+    # Run the actual tests
+    run_test_execution
+    
+    # Restore original settings
+    QUICK_MODE="$old_quick"
+    FAIL_FAST="$old_fail_fast"
+    ONLY_TESTS="$old_only"
+    TARGET_MODULE="$old_module"
+    PARALLEL_MODE="$old_parallel"
+    VERBOSE="$old_verbose"
+}
+
+# Pause for user input after test completion
+pause_for_user() {
+    echo ""
+    echo -e "${CYAN}Press Enter to return to the menu...${NC}"
+    read -r
+}
+
+# Main interactive mode function
+run_interactive_mode() {
+    while true; do
+        clear
+        echo -e "${BLUE}╔══════════════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${BLUE}║                    YNAB Syncher Test Dashboard                      ║${NC}"
+        echo -e "${BLUE}║                     Interactive Development Mode                     ║${NC}"
+        echo -e "${BLUE}╚══════════════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        
+        display_last_test_results
+        echo ""
+        
+        echo -e "${CYAN}🎯 Test Options:${NC}"
+        echo -e "  ${WHITE}1.${NC} 🚀 Quick feedback (architecture + unit + integration)"
+        echo -e "  ${WHITE}2.${NC} 🏗️  Architecture validation only"
+        echo -e "  ${WHITE}3.${NC} 🧪 Domain unit tests (fast)"
+        echo -e "  ${WHITE}4.${NC} 🔧 Infrastructure integration tests"
+        echo -e "  ${WHITE}5.${NC} 🎲 Mutation testing (comprehensive)"
+        echo -e "  ${WHITE}6.${NC} 📈 Coverage analysis"
+        echo -e "  ${WHITE}7.${NC} ⚡ Full parallel suite"
+        echo -e "  ${WHITE}8.${NC} 👁️  Watch mode (continuous testing) ${YELLOW}[Future]${NC}"
+        echo -e "  ${WHITE}9.${NC} 🔧 Cache management ${YELLOW}[Future]${NC}"
+        echo ""
+        echo -e "${YELLOW}⚙️  Advanced Options (Future Releases):${NC}"
+        echo -e "  ${WHITE}a.${NC} 📋 Configuration profiles"
+        echo -e "  ${WHITE}b.${NC} 📊 Quality dashboard"
+        echo -e "  ${WHITE}c.${NC} 📈 Trend analysis"
+        echo -e "  ${WHITE}d.${NC} 🔍 Test impact analysis"
+        echo ""
+        echo -e "${WHITE}q.${NC} Exit"
+        echo ""
+        
+        echo -ne "${CYAN}Select option: ${NC}"
+        read -r choice
+        
+        handle_interactive_choice "$choice"
+    done
 }
 
 print_section() {
@@ -730,6 +964,12 @@ main() {
     # Parse command line arguments
     parse_arguments "$@"
     
+    # Check for interactive mode first
+    if [[ "$INTERACTIVE_MODE" == "true" ]]; then
+        run_interactive_mode
+        return
+    fi
+    
     # Setup parallel execution
     setup_parallel_execution
     
@@ -754,6 +994,16 @@ main() {
         print_error "Please run this script from the scripts directory of the YNAB-Syncher project"
         exit 1
     fi
+    
+    # Run the main test execution
+    run_test_execution
+    
+    # Generate Summary Report with actual results
+    generate_summary_report
+}
+
+# Main test execution logic (extracted for reuse by interactive mode)
+run_test_execution() {
     
     # Set appropriate header based on mode
     local header_suffix=""
@@ -867,9 +1117,6 @@ main() {
             run_test_suite_with_fail_fast "$test_name" "$test_command"
         done
     fi
-    
-    # Generate Summary Report with actual results
-    generate_summary_report
 }
 
 # Execute main function
