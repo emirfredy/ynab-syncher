@@ -677,6 +677,21 @@ run_test_suite_with_fail_fast() {
                     local infra_coverage=$(extract_coverage_percentage "infrastructure")
                     test_counts["$name"]="${domain_coverage}, ${infra_coverage}"
                     ;;
+                *"Full Build Verification"*)
+                    # For full build verification, extract test count and also store coverage info
+                    local count=$(echo "$output" | grep -E "Tests run: [0-9]+" | tail -1 | sed -E 's/.*Tests run: ([0-9]+).*/\1/')
+                    test_counts["$name"]="${count:-0} tests"
+                    
+                    # Also extract and store coverage information for summary display
+                    local domain_coverage=$(extract_coverage_percentage "domain")
+                    local infra_coverage=$(extract_coverage_percentage "infrastructure")
+                    if [[ "$domain_coverage" != "Coverage generated" && "$infra_coverage" != "Coverage generated" ]]; then
+                        # Store coverage info in a special "Code Coverage Analysis" entry
+                        test_results["Code Coverage Analysis"]="PASS"
+                        test_counts["Code Coverage Analysis"]="Domain: ${domain_coverage}, Infra: ${infra_coverage}"
+                        test_durations["Code Coverage Analysis"]="Generated"
+                    fi
+                    ;;
                 *)
                     # Extract test count from output
                     local count=$(echo "$output" | grep -E "Tests run: [0-9]+" | tail -1 | sed -E 's/.*Tests run: ([0-9]+).*/\1/')
