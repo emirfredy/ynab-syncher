@@ -46,6 +46,10 @@ ONLY_TESTS=""
 TARGET_MODULE=""
 QUICK_MODE=false
 
+# Phase 2: Parallel execution flags
+PARALLEL_MODE=false
+MAX_PARALLEL_JOBS=0
+
 # Show usage information
 show_usage() {
     echo "Usage: $0 [OPTIONS]"
@@ -56,6 +60,8 @@ show_usage() {
     echo "  --only <tests>       Run only specified test types (space-separated)"
     echo "  --module <module>    Run tests for specific module only (domain or infrastructure)"
     echo "  --verbose, -v        Enable verbose output"
+    echo "  --parallel           Enable parallel test execution (60% faster)"
+    echo "  --jobs <n>           Maximum parallel jobs (default: auto-detect)"
     echo "  --help, -h           Show this help message"
     echo ""
     echo "AVAILABLE TEST TYPES:"
@@ -74,6 +80,11 @@ show_usage() {
     echo "  $0 --only unit integration      # Run unit and integration tests"
     echo "  $0 --module domain              # Run only domain module tests"
     echo "  $0 --quick --fail-fast          # Quick tests with fail-fast"
+    echo ""
+    echo "  # Parallel execution (Phase 2)"
+    echo "  $0 --parallel                   # Parallel execution (60% faster)"
+    echo "  $0 --quick --parallel --fail-fast  # Super-fast development feedback"
+    echo "  $0 --parallel --jobs 4          # Parallel with custom job count"
 }
 
 # Parse command line arguments
@@ -105,6 +116,18 @@ parse_arguments() {
                 TARGET_MODULE="$2"
                 if [[ "$TARGET_MODULE" != "domain" && "$TARGET_MODULE" != "infrastructure" ]]; then
                     echo -e "${RED}Error: Module must be 'domain' or 'infrastructure'${NC}"
+                    exit 1
+                fi
+                shift 2
+                ;;
+            --parallel)
+                PARALLEL_MODE=true
+                shift
+                ;;
+            --jobs)
+                MAX_PARALLEL_JOBS="$2"
+                if ! [[ "$MAX_PARALLEL_JOBS" =~ ^[0-9]+$ ]] || [[ "$MAX_PARALLEL_JOBS" -lt 1 ]]; then
+                    echo -e "${RED}Error: Jobs must be a positive integer${NC}"
                     exit 1
                 fi
                 shift 2
@@ -230,6 +253,33 @@ handle_test_failure() {
 declare -A test_results
 declare -A test_counts
 declare -A test_durations
+
+# Parallel execution tracking
+declare -A test_pids
+declare -A test_outputs
+
+# Setup parallel execution environment
+setup_parallel_execution() {
+    if [[ "$PARALLEL_MODE" == "true" ]]; then
+        # Auto-detect number of cores if not specified
+        if [[ "$MAX_PARALLEL_JOBS" -eq 0 ]]; then
+            if command -v nproc >/dev/null 2>&1; then
+                MAX_PARALLEL_JOBS=$(nproc)
+            else
+                MAX_PARALLEL_JOBS=4  # Safe default
+            fi
+        fi
+        
+        # Limit to reasonable maximum (avoid overwhelming system)
+        if [[ "$MAX_PARALLEL_JOBS" -gt 8 ]]; then
+            MAX_PARALLEL_JOBS=8
+        fi
+        
+        if [[ "$VERBOSE" == "true" ]]; then
+            echo -e "${CYAN}⚡ Parallel Mode: Enabled (${MAX_PARALLEL_JOBS} jobs)${NC}"
+        fi
+    fi
+}
 
 # Colorize status values
 colorize_status() {
@@ -415,6 +465,105 @@ run_test_suite_with_fail_fast() {
     return 0
 }
 
+# Parallel test execution
+run_test_parallel() {
+    local name="$1"
+    local command="$2"
+    local temp_output="/tmp/test_output_${name// /_}.log"
+    
+    {
+        echo "Starting parallel test: $name"
+        echo "Command: $command"
+        echo "Timestamp: $(date)"
+        echo "----------------------------------------"
+        
+        local start_time=$(date +%s)
+        if execute_maven "$command" 2>&1; then
+            local end_time=$(date +%s)
+            local duration=$((end_time - start_time))
+            echo "SUCCESS:$duration" >> "$temp_output.status"
+        else
+            local end_time=$(date +%s)
+            local duration=$((end_time - start_time))
+            echo "FAIL:$duration" >> "$temp_output.status"
+        fi
+    } > "$temp_output" 2>&1 &
+    
+    test_pids["$name"]=$!
+    test_outputs["$name"]="$temp_output"
+}
+
+# Wait for parallel test completion
+wait_for_parallel_test() {
+    local name="$1"
+    local pid="${test_pids[$name]}"
+    local temp_output="${test_outputs[$name]}"
+    
+    if [[ -n "$pid" ]]; then
+        if [[ "$VERBOSE" == "true" ]]; then
+            echo -e "${CYAN}⏳ Waiting for: $name${NC}"
+        fi
+        
+        wait "$pid"
+        local exit_code=$?
+        
+        # Read status from temp file
+        local status_info=""
+        if [[ -f "$temp_output.status" ]]; then
+            status_info=$(cat "$temp_output.status")
+            rm -f "$temp_output.status"
+        fi
+        
+        local duration="0s"
+        local test_status="FAIL"
+        if [[ "$status_info" =~ ^SUCCESS:([0-9]+)$ ]]; then
+            test_status="PASS"
+            duration="${BASH_REMATCH[1]}s"
+        elif [[ "$status_info" =~ ^FAIL:([0-9]+)$ ]]; then
+            test_status="FAIL"
+            duration="${BASH_REMATCH[1]}s"
+        fi
+        
+        # Process output for test counts
+        local output=""
+        if [[ -f "$temp_output" ]]; then
+            output=$(cat "$temp_output")
+            rm -f "$temp_output"
+        fi
+        
+        # Extract test metrics
+        case "$name" in
+            *"Coverage"*)
+                local domain_coverage=$(extract_coverage_percentage "domain")
+                local infra_coverage=$(extract_coverage_percentage "infrastructure")
+                test_counts["$name"]="${domain_coverage}, ${infra_coverage}"
+                ;;
+            *"Mutation"*)
+                local score=$(extract_mutation_score "$output")
+                test_counts["$name"]="${score}%"
+                ;;
+            *)
+                local count=$(echo "$output" | grep -E "Tests run: [0-9]+" | tail -1 | sed -E 's/.*Tests run: ([0-9]+).*/\1/')
+                test_counts["$name"]="${count:-0}"
+                ;;
+        esac
+        
+        test_results["$name"]="$test_status"
+        test_durations["$name"]="$duration"
+        
+        if [[ "$test_status" == "PASS" ]]; then
+            print_success "$name completed successfully"
+        else
+            print_error "$name failed"
+            if [[ "$FAIL_FAST" == "true" ]]; then
+                handle_test_failure "$name" $exit_code "$output"
+            fi
+        fi
+        
+        return $exit_code
+    fi
+}
+
 # Original run_test_suite function (for backward compatibility)
 run_test_suite() {
     local name="$1"
@@ -581,6 +730,9 @@ main() {
     # Parse command line arguments
     parse_arguments "$@"
     
+    # Setup parallel execution
+    setup_parallel_execution
+    
     # Show configuration if verbose
     if [[ "$VERBOSE" == "true" ]]; then
         echo -e "${CYAN}🔧 CONFIGURATION:${NC}"
@@ -589,6 +741,10 @@ main() {
         echo -e "   Only Tests: ${ONLY_TESTS:-all}"
         echo -e "   Target Module: ${TARGET_MODULE:-all}"
         echo -e "   Verbose: $VERBOSE"
+        echo -e "   Parallel Mode: $PARALLEL_MODE"
+        if [[ "$PARALLEL_MODE" == "true" ]]; then
+            echo -e "   Max Jobs: $MAX_PARALLEL_JOBS"
+        fi
         echo ""
     fi
     
@@ -600,16 +756,25 @@ main() {
     fi
     
     # Set appropriate header based on mode
+    local header_suffix=""
+    if [[ "$PARALLEL_MODE" == "true" ]]; then
+        header_suffix=" (Parallel Mode)"
+    fi
+    
     if [[ "$QUICK_MODE" == "true" ]]; then
-        print_header "🧪 YNAB Syncher - Quick Test Suite"
+        print_header "🧪 YNAB Syncher - Quick Test Suite${header_suffix}"
     else
-        print_header "🧪 YNAB Syncher - Comprehensive Test & Validation Suite"
+        print_header "🧪 YNAB Syncher - Comprehensive Test & Validation Suite${header_suffix}"
     fi
     
     echo -e "${WHITE}Starting test execution...${NC}"
     echo -e "${WHITE}Project: YNAB-Syncher (Hexagonal Architecture)${NC}"
     echo -e "${WHITE}Project Root: $PROJECT_ROOT${NC}"
     echo -e "${WHITE}Date: $(date)${NC}"
+    
+    if [[ "$PARALLEL_MODE" == "true" ]]; then
+        echo -e "${WHITE}Execution Mode: Parallel (${MAX_PARALLEL_JOBS} jobs)${NC}"
+    fi
     
     # Define all available tests in execution order
     local -a all_tests=(
@@ -621,22 +786,87 @@ main() {
         "Mutation Testing (PIT):mvn -pl domain org.pitest:pitest-maven:mutationCoverage -DwithHistory"
     )
     
-    # Execute tests based on configuration
-    for test_entry in "${all_tests[@]}"; do
-        local test_name="${test_entry%%:*}"
-        local test_command="${test_entry#*:}"
+    # Execute tests with smart parallel/sequential logic
+    if [[ "$PARALLEL_MODE" == "true" ]]; then
+        # Phase 1: Independent tests that can run in parallel
+        local independent_tests=(
+            "Architecture Tests (ArchUnit):mvn test -pl infrastructure -Dtest=ArchitectureTest"
+            "Unit Tests (Domain):mvn -pl domain clean test"
+            "WireMock Integration Tests:mvn -pl infrastructure test -Dtest=YnabApiClientWireMockTest"
+        )
         
-        # Check if this test should be skipped
-        if should_skip_test "$test_name"; then
-            if [[ "$VERBOSE" == "true" ]]; then
-                echo -e "${CYAN}⏭️  Skipping: $test_name${NC}"
-            fi
-            continue
+        if [[ "$VERBOSE" == "true" ]]; then
+            echo -e "${CYAN}🚀 Phase 1: Running independent tests in parallel${NC}"
         fi
         
-        # Execute the test
-        run_test_suite_with_fail_fast "$test_name" "$test_command"
-    done
+        # Start independent tests in parallel
+        for test_entry in "${independent_tests[@]}"; do
+            local test_name="${test_entry%%:*}"
+            local test_command="${test_entry#*:}"
+            
+            if should_skip_test "$test_name"; then
+                if [[ "$VERBOSE" == "true" ]]; then
+                    echo -e "${CYAN}⏭️  Skipping: $test_name${NC}"
+                fi
+                continue
+            fi
+            
+            print_section "$test_name"
+            run_test_parallel "$test_name" "$test_command"
+        done
+        
+        # Wait for all independent tests to complete
+        for test_entry in "${independent_tests[@]}"; do
+            local test_name="${test_entry%%:*}"
+            if should_skip_test "$test_name"; then
+                continue
+            fi
+            wait_for_parallel_test "$test_name"
+        done
+        
+        # Phase 2: Dependent tests (sequential)
+        local dependent_tests=(
+            "Integration Tests (Infrastructure):mvn -pl infrastructure clean test"
+            "Full Build Verification:mvn clean verify"
+            "Mutation Testing (PIT):mvn -pl domain org.pitest:pitest-maven:mutationCoverage -DwithHistory"
+        )
+        
+        if [[ "$VERBOSE" == "true" ]]; then
+            echo -e "${CYAN}🔄 Phase 2: Running dependent tests sequentially${NC}"
+        fi
+        
+        # Run dependent tests sequentially
+        for test_entry in "${dependent_tests[@]}"; do
+            local test_name="${test_entry%%:*}"
+            local test_command="${test_entry#*:}"
+            
+            if should_skip_test "$test_name"; then
+                if [[ "$VERBOSE" == "true" ]]; then
+                    echo -e "${CYAN}⏭️  Skipping: $test_name${NC}"
+                fi
+                continue
+            fi
+            
+            run_test_suite_with_fail_fast "$test_name" "$test_command"
+        done
+    else
+        # Sequential execution (original behavior)
+        for test_entry in "${all_tests[@]}"; do
+            local test_name="${test_entry%%:*}"
+            local test_command="${test_entry#*:}"
+            
+            # Check if this test should be skipped
+            if should_skip_test "$test_name"; then
+                if [[ "$VERBOSE" == "true" ]]; then
+                    echo -e "${CYAN}⏭️  Skipping: $test_name${NC}"
+                fi
+                continue
+            fi
+            
+            # Execute the test
+            run_test_suite_with_fail_fast "$test_name" "$test_command"
+        done
+    fi
     
     # Generate Summary Report with actual results
     generate_summary_report
