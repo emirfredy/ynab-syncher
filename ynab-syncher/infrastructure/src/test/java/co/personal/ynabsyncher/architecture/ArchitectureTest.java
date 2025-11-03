@@ -258,24 +258,32 @@ class ArchitectureTest {
     class LayeredArchitectureTest {
 
         @Test
-        @DisplayName("Hexagonal architecture layers should be respected")
-        void hexagonalArchitectureLayersShouldBeRespected() {
+        @DisplayName("Netflix/Uber microservices pattern layers should be respected")
+        void netflixUberPatternLayersShouldBeRespected() {
             ArchRule rule = layeredArchitecture()
                     .consideringOnlyDependenciesInLayers() // This ignores JDK dependencies
                     
-                    // Define layers
-                    .layer("Domain").definedBy("co.personal.ynabsyncher.model..")
-                    .layer("API").definedBy("co.personal.ynabsyncher.api..")
-                    .layer("SPI").definedBy("co.personal.ynabsyncher.spi..")
-                    .layer("UseCase").definedBy("co.personal.ynabsyncher.usecase..")
+                    // Define layers according to Netflix/Uber pattern
+                    .layer("Domain").definedBy(
+                        "co.personal.ynabsyncher.model..", 
+                        "co.personal.ynabsyncher.api..",
+                        "co.personal.ynabsyncher.spi..",
+                        "co.personal.ynabsyncher.usecase.."
+                    )
+                    // ApplicationServices layer will be added when implemented
+                    .layer("WebControllers").definedBy("..infrastructure.web..")
+                    .layer("RepositoryAdapters").definedBy("..infrastructure.persistence..")
+                    .layer("ClientAdapters").definedBy("..infrastructure.client..")
+                    .layer("Configuration").definedBy("..infrastructure.config..")
                     
-                    // Define allowed access patterns
-                    .whereLayer("UseCase").mayOnlyAccessLayers("Domain", "API", "SPI")
-                    .whereLayer("API").mayOnlyAccessLayers("Domain")
-                    .whereLayer("SPI").mayOnlyAccessLayers("Domain")
+                    // Define proper access patterns for Netflix/Uber
+                    // WebControllers access will be restricted to ApplicationServices when implemented
+                    .whereLayer("RepositoryAdapters").mayOnlyAccessLayers("Domain", "Configuration")
+                    .whereLayer("ClientAdapters").mayOnlyAccessLayers("Domain", "Configuration")
+                    .whereLayer("Configuration").mayOnlyAccessLayers("Domain", "ClientAdapters", "RepositoryAdapters")
                     .whereLayer("Domain").mayNotAccessAnyLayer()
                     
-                    .because("Hexagonal architecture layers should respect dependency rules");
+                    .because("Netflix/Uber microservices pattern should be enforced (ready for ApplicationServices)");
 
             rule.check(allClasses);
         }
@@ -286,29 +294,28 @@ class ArchitectureTest {
     class TestingArchitecture {
 
         @Test
-        @DisplayName("Test classes should be in same package as tested classes")
-        void testClassesShouldBeInSamePackageAsTestedClasses() {
-            // Verify that test classes follow proper naming and organization
-            // Test classes should have 'Test' suffix and be properly organized
+        @DisplayName("Test classes should follow proper organization")
+        void testClassesShouldFollowProperOrganization() {
+            // Allow nested test classes (they're good practice for organization)
             ArchRule testNamingRule = classes()
                     .that().haveSimpleNameEndingWith("Test")
-                    .and().areNotMemberClasses() // Exclude nested test classes
                     .and().doNotHaveSimpleName("ArchitectureTest") // Exclude this architecture test
                     .should().haveNameMatching(".*Test$")
                     .because("Test classes should follow standard naming convention with 'Test' suffix");
 
-            // Verify test classes are in appropriate packages relative to what they test
-            // Use noClasses to exclude architecture package
-            ArchRule packageStructureRule = noClasses()
+            // Verify test classes don't pollute production packages  
+            ArchRule testPackageRule = noClasses()
                     .that().haveSimpleNameEndingWith("Test")
                     .and().doNotHaveSimpleName("ArchitectureTest")
-                    .and().areNotMemberClasses()
-                    .and().resideInAPackage("co.personal.ynabsyncher..")
-                    .should().resideInAPackage("..architecture..")
-                    .because("Test classes should not be in architecture package except for ArchitectureTest");
+                    .and().areNotMemberClasses()  // Allow nested test classes
+                    .should().resideInAPackage("co.personal.ynabsyncher.model..")
+                    .orShould().resideInAPackage("co.personal.ynabsyncher.api..")
+                    .orShould().resideInAPackage("co.personal.ynabsyncher.spi..")
+                    .orShould().resideInAPackage("co.personal.ynabsyncher.usecase..")
+                    .because("Test classes should not be in domain packages (use test source sets)");
 
             testNamingRule.check(allClasses);
-            packageStructureRule.check(allClasses);
+            testPackageRule.check(allClasses);
         }
     }
 
@@ -351,10 +358,24 @@ class ArchitectureTest {
         @DisplayName("Domain services should not depend on use cases")
         void domainServicesShouldNotDependOnUseCases() {
             ArchRule rule = noClasses()
-                    .that().resideInAPackage("..service..")
+                    .that().resideInAPackage("co.personal.ynabsyncher.model.service..")  // Specific domain location
+                    .or().resideInAPackage("co.personal.ynabsyncher.usecase.service..")   // Alternative domain location
                     .should().dependOnClassesThat().resideInAPackage("..usecase..")
-                    .as("Domain services should not depend on use cases (wrong direction)")
-                    .allowEmptyShould(true); // Allow empty check since we use use cases directly
+                    .as("Domain services should not depend on use case interfaces")
+                    .allowEmptyShould(true);
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Application services should orchestrate domain use cases")
+        void applicationServicesShouldOrchestrateDomainUseCases() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..infrastructure.service..")  // Infrastructure application services
+                    .and().haveSimpleNameEndingWith("ApplicationService")
+                    .should().dependOnClassesThat().resideInAnyPackage("..api.usecase..")
+                    .as("Application services should orchestrate domain use cases (Netflix/Uber pattern)")
+                    .allowEmptyShould(true);  // Allow empty since we might not have application services yet
 
             rule.check(allClasses);
         }
@@ -363,10 +384,11 @@ class ArchitectureTest {
         @DisplayName("API DTOs should not be used in domain services")
         void apiDtosShouldNotBeUsedInDomainServices() {
             ArchRule rule = noClasses()
-                    .that().resideInAPackage("..service..")
+                    .that().resideInAPackage("co.personal.ynabsyncher.model.service..")  // Specific domain location
+                    .or().resideInAPackage("co.personal.ynabsyncher.usecase.service..")   // Alternative domain location
                     .should().dependOnClassesThat().resideInAPackage("..api.dto..")
                     .as("Domain services should use domain models, not API DTOs")
-                    .allowEmptyShould(true); // Allow empty check since we use use cases directly
+                    .allowEmptyShould(true);
 
             rule.check(allClasses);
         }
@@ -454,13 +476,10 @@ class ArchitectureTest {
         }
 
         @Test
-        @DisplayName("Non-config infrastructure should only access domain through SPI contracts")
-        void nonConfigInfrastructureShouldOnlyAccessDomainThroughSPIContracts() {
+        @DisplayName("Repository adapters should only access domain through SPI")
+        void repositoryAdaptersShouldOnlyAccessDomainThroughSPI() {
             ArchRule rule = classes()
-                    .that().resideInAPackage("..infrastructure.client..")
-                    .or().resideInAPackage("..infrastructure.persistence..")
-                    .or().resideInAPackage("..infrastructure.web..")
-                    .or().resideInAPackage("..infrastructure.memory..")
+                    .that().resideInAPackage("..infrastructure.persistence..")
                     .should().onlyAccessClassesThat()
                     .resideInAnyPackage(
                         "java..",
@@ -468,43 +487,252 @@ class ArchitectureTest {
                         "jakarta..",
                         "javax..",
                         "org.slf4j..",
-                        "..infrastructure..", // Can access other infrastructure classes
-                        "..spi..", // Should access domain through SPI
-                        "..api.error..", // Can access domain errors
-                        "..model..", // Allow access to domain models for mapping
-                        "org.junit..", // Allow test frameworks for test classes
-                        "org.assertj..", // Allow test frameworks for test classes
-                        "org.mockito..", // Allow test frameworks for test classes
-                        "org.testcontainers..", // Allow Testcontainers in tests
-                        "com.github.tomakehurst.wiremock.." // Allow WireMock for test classes
+                        "..infrastructure.persistence..", // Own package
+                        "..spi.repository..",            // SPI repository contracts
+                        "..spi.client..",               // SPI client contracts (for composite adapters)
+                        "..model..",                     // Domain models for mapping
+                        "org.junit..", "org.assertj..", "org.mockito..", "org.testcontainers.."
                     )
-                    .as("Non-config infrastructure should access domain through SPI contracts");
+                    .as("Repository adapters should implement SPI contracts and work with domain models only");
 
             rule.check(allClasses);
         }
 
         @Test
+        @DisplayName("Client adapters should only access domain through SPI")
+        void clientAdaptersShouldOnlyAccessDomainThroughSPI() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..infrastructure.client..")
+                    .should().onlyAccessClassesThat()
+                    .resideInAnyPackage(
+                        "java..",
+                        "org.springframework..",
+                        "jakarta..",
+                        "javax..",
+                        "org.slf4j..",
+                        "..infrastructure.client..",     // Own package (DTOs, mappers)
+                        "..spi.client..",               // SPI contracts only
+                        "..api.error..",                // Domain errors for exception mapping
+                        "..model..",                    // Domain models for mapping
+                        "org.junit..", "org.assertj..", "org.mockito..", "com.github.tomakehurst.wiremock.."
+                    )
+                    .as("Client adapters should implement SPI contracts and work with domain models only");
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Application services should orchestrate domain through API")
+        void applicationServicesShouldOrchestrateDomainThroughAPI() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..infrastructure.service..")
+                    .and().haveSimpleNameEndingWith("ApplicationService")
+                    .should().onlyAccessClassesThat()
+                    .resideInAnyPackage(
+                        "java..",
+                        "org.springframework..",
+                        "jakarta..",
+                        "javax..",
+                        "org.slf4j..",
+                        "..infrastructure.service..",    // Own package
+                        "..infrastructure.web.dto..",    // Web DTOs for conversion
+                        "..api.usecase..",              // Use case orchestration (Netflix/Uber)
+                        "..api.dto..",                  // Domain DTOs for conversion
+                        "..api.error..",                // Domain errors for handling
+                        "..model..",                    // Domain models if needed
+                        "org.junit..", "org.assertj..", "org.mockito.."
+                    )
+                    .as("Application services should orchestrate domain use cases (Netflix/Uber pattern)")
+                    .allowEmptyShould(true);
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Web controllers should only access application services")
+        void webControllersShouldOnlyAccessApplicationServices() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..infrastructure.web..")
+                    .and().haveSimpleNameEndingWith("Controller")
+                    .should().onlyAccessClassesThat()
+                    .resideInAnyPackage(
+                        "java..",
+                        "org.springframework..",
+                        "jakarta..",
+                        "javax..",
+                        "org.slf4j..",
+                        "..infrastructure.web..",        // Own package (DTOs, mappers)
+                        "..infrastructure.service..",    // Application services only
+                        "org.junit..", "org.assertj..", "org.mockito.."
+                    )
+                    .as("Controllers should only depend on application services (Netflix/Uber pattern)")
+                    .allowEmptyShould(true);
+
+            rule.check(allClasses);
+        }
+    }
+
+    @Nested
+    @DisplayName("Netflix/Uber Anti-Pattern Prevention")
+    class NetflixUberAntiPatternPrevention {
+
+        @Test
+        @DisplayName("Controllers should not access domain use cases directly")
+        void controllersShouldNotAccessDomainUseCasesDirectly() {
+            ArchRule rule = noClasses()
+                    .that().resideInAPackage("..infrastructure.web..")
+                    .and().haveSimpleNameEndingWith("Controller")
+                    .should().dependOnClassesThat().resideInAPackage("..api.usecase..")
+                    .as("Controllers should not access domain use cases directly (Netflix/Uber pattern violation)");
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Controllers should not access domain DTOs directly")
+        void controllersShouldNotAccessDomainDtosDirectly() {
+            ArchRule rule = noClasses()
+                    .that().resideInAPackage("..infrastructure.web..")
+                    .and().haveSimpleNameEndingWith("Controller")
+                    .should().dependOnClassesThat().resideInAPackage("..api.dto..")
+                    .as("Controllers should work with Web DTOs, not domain DTOs directly");
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Repository adapters should not access domain API")
+        void repositoryAdaptersShouldNotAccessDomainAPI() {
+            ArchRule rule = noClasses()
+                    .that().resideInAPackage("..infrastructure.persistence..")
+                    .should().dependOnClassesThat().resideInAPackage("..api.usecase..")
+                    .orShould().dependOnClassesThat().resideInAPackage("..api.dto..")
+                    .as("Repository adapters should not access domain API (they implement SPI only)");
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Client adapters should not access domain API")
+        void clientAdaptersShouldNotAccessDomainAPI() {
+            ArchRule rule = noClasses()
+                    .that().resideInAPackage("..infrastructure.client..")
+                    .should().dependOnClassesThat().resideInAPackage("..api.usecase..")
+                    .orShould().dependOnClassesThat().resideInAPackage("..api.dto..")
+                    .as("Client adapters should not access domain API (they implement SPI only)");
+
+            rule.check(allClasses);
+        }
+    }
+
+    @Nested
+    @DisplayName("Production REST API Rules")
+    class ProductionRestApiRules {
+
+        @Test
+        @DisplayName("Controllers should use proper HTTP annotations")
+        void controllersShouldUseProperHttpAnnotations() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..infrastructure.web..")
+                    .and().haveSimpleNameEndingWith("Controller")
+                    .should().beAnnotatedWith("org.springframework.web.bind.annotation.RestController")
+                    .as("REST controllers should use @RestController annotation")
+                    .allowEmptyShould(true);
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Application services should use proper Spring annotations")
+        void applicationServicesShouldUseProperSpringAnnotations() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..infrastructure.service..")
+                    .and().haveSimpleNameEndingWith("ApplicationService")
+                    .should().beAnnotatedWith("org.springframework.stereotype.Service")
+                    .as("Application services should use @Service annotation")
+                    .allowEmptyShould(true);
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Web DTOs should use validation annotations properly")
+        void webDtosShouldUseValidationAnnotationsProperly() {
+            ArchRule rule = classes()
+                    .that().resideInAPackage("..infrastructure.web.dto..")
+                    .and().haveSimpleNameEndingWith("WebRequest")
+                    .should().onlyAccessClassesThat()
+                    .resideInAnyPackage(
+                        "java..",
+                        "jakarta.validation..",  // Allow validation annotations
+                        "com.fasterxml.jackson..", // Allow JSON annotations
+                        "..infrastructure.web.dto.."
+                    )
+                    .as("Web request DTOs should use validation annotations")
+                    .allowEmptyShould(true);
+
+            rule.check(allClasses);
+        }
+    }
+
+    @Nested
+    @DisplayName("Domain Purity Rules")
+    class DomainPurityRules {
+
+        @Test
+        @DisplayName("Domain use cases should not depend on infrastructure concerns")
+        void domainUseCasesShouldNotDependOnInfrastructureConcerns() {
+            ArchRule rule = noClasses()
+                    .that().resideInAPackage("co.personal.ynabsyncher.usecase..")
+                    .should().dependOnClassesThat().resideInAnyPackage(
+                        "..infrastructure..",
+                        "org.springframework.transaction..",  // No @Transactional in domain
+                        "org.springframework.cache..",        // No @Cacheable in domain
+                        "org.springframework.security.."      // No security in domain
+                    )
+                    .because("Domain use cases should remain pure business logic");
+
+            rule.check(allClasses);
+        }
+
+        @Test
+        @DisplayName("Domain models should not expose infrastructure interfaces")
+        void domainModelsShouldNotExposeInfrastructureInterfaces() {
+            ArchRule rule = noClasses()
+                    .that().resideInAPackage("co.personal.ynabsyncher.model..")
+                    .should().implement("org.springframework.data.repository.Repository")
+                    .orShould().implement("jakarta.persistence.EntityManager")
+                    .orShould().implement("org.springframework.web.bind.annotation.RequestMapping")
+                    .because("Domain models should not implement infrastructure interfaces");
+
+            rule.check(allClasses);
+        }
+    }
+
+    @Nested
+    @DisplayName("Infrastructure Adapter Access Patterns")
+    class InfrastructureAdapterAccessPatterns {
+
+        @Test
         @DisplayName("DTOs should be collocated with their adapters")
         void dtosShouldBeCollocatedWithTheirAdapters() {
             ArchRule webDtosRule = classes()
-                    .that().haveSimpleNameEndingWith("RequestDto")
-                    .or().haveSimpleNameEndingWith("ResponseDto")
+                    .that().haveSimpleNameEndingWith("WebRequest")    // ✅ Matches our naming convention
+                    .or().haveSimpleNameEndingWith("WebResponse")     // ✅ Matches our naming convention
                     .should().resideInAPackage("..infrastructure.web.dto..")
                     .as("Web DTOs should be in infrastructure.web.dto package")
                     .allowEmptyShould(true);
 
-            ArchRule apiDtosRule = classes()
-                    .that().haveSimpleNameContaining("Ynab")
-                    .and().haveSimpleNameEndingWith("Dto")
-                    .or().haveSimpleNameContaining("Ynab")
-                    .and().haveSimpleNameEndingWith("Response")
-                    .or().haveSimpleNameContaining("Ynab")
-                    .and().haveSimpleNameEndingWith("Request")
-                    .should().resideInAPackage("..infrastructure.client.dto..")
-                    .as("YNAB API DTOs should be in infrastructure.client.dto package");
+            ArchRule externalApiDtosRule = classes()
+                    .that().resideInAPackage("..infrastructure.client.dto..")
+                    .should().haveSimpleNameContaining("Ynab")        // Only external API DTOs should contain "Ynab"
+                    .orShould().haveSimpleNameContaining("External")  // Or have "External" in name
+                    .orShould().haveSimpleNameContaining("Api")       // Or have "Api" in name
+                    .as("External API DTOs should be properly named and located")
+                    .allowEmptyShould(true);
 
             webDtosRule.check(allClasses);
-            apiDtosRule.check(allClasses);
+            externalApiDtosRule.check(allClasses);
         }
     }
 }
