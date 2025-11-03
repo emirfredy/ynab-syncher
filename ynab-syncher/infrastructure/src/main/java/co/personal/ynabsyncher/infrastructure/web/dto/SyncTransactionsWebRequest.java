@@ -12,13 +12,11 @@ import java.util.List;
 /**
  * Web request DTO for complete YNAB synchronization workflow.
  * Combines import, reconciliation, and creation parameters.
+ * Account ID is provided via URL path parameter.
  */
 public record SyncTransactionsWebRequest(
         @NotBlank(message = "Budget ID is required")
         String budgetId,
-        
-        @NotBlank(message = "Account ID is required")
-        String accountId,
         
         @NotNull(message = "From date is required")
         LocalDate fromDate,

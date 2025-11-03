@@ -50,13 +50,13 @@ class YnabSyncApplicationServiceTest {
     @DisplayName("Should orchestrate import bank transactions with proper DTO mapping")
     void shouldOrchestrateImportBankTransactionsWithProperDtoMapping() {
         // Given
+        String accountId = "account-123";
         ImportBankTransactionsWebRequest webRequest = new ImportBankTransactionsWebRequest(
-                "account-123",
                 List.of(new BankTransactionWebData("2024-01-15", "Test transaction", "100.00", "Test Merchant"))
         );
         
         ImportBankTransactionsRequest domainRequest = new ImportBankTransactionsRequest(
-                "account-123",
+                accountId,
                 List.of(new co.personal.ynabsyncher.api.dto.BankTransactionData(
                         "2024-01-15", "Test transaction", "100.00", "Test Merchant"
                 ))
@@ -73,16 +73,16 @@ class YnabSyncApplicationServiceTest {
                 1, 1, 0, List.of(), List.of("Import completed successfully")
         );
 
-        when(importMapper.toDomainRequest(webRequest)).thenReturn(domainRequest);
+        when(importMapper.toDomainRequest(accountId, webRequest)).thenReturn(domainRequest);
         when(importBankTransactions.importTransactions(domainRequest)).thenReturn(domainResponse);
         when(importMapper.toWebResponse(domainResponse)).thenReturn(expectedResponse);
 
         // When
-        ImportBankTransactionsWebResponse actualResponse = applicationService.importBankTransactions(webRequest);
+        ImportBankTransactionsWebResponse actualResponse = applicationService.importBankTransactions(accountId, webRequest);
 
         // Then
         assertThat(actualResponse).isEqualTo(expectedResponse);
-        verify(importMapper).toDomainRequest(webRequest);
+        verify(importMapper).toDomainRequest(accountId, webRequest);
         verify(importBankTransactions).importTransactions(domainRequest);
         verify(importMapper).toWebResponse(domainResponse);
     }

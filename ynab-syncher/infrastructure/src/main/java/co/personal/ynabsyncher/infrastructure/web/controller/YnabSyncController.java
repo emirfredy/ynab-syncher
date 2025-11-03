@@ -91,12 +91,7 @@ public class YnabSyncController {
         try {
             logger.info("Starting bank transaction import for account: {}", accountId);
             
-            // Business validation: Ensure path variable matches request body for consistency
-            if (!accountId.equals(request.accountId())) {
-                throw new IllegalArgumentException("Account ID in path must match request body");
-            }
-            
-            ImportBankTransactionsWebResponse response = ynabSyncApplicationService.importBankTransactions(request);
+            ImportBankTransactionsWebResponse response = ynabSyncApplicationService.importBankTransactions(accountId, request);
             
             logger.info("Bank transaction import completed successfully. Total: {}, Successful: {}, Failed: {}",
                     response.totalTransactions(), response.successfulImports(), response.failedImports());
@@ -135,12 +130,7 @@ public class YnabSyncController {
             logger.info("Starting transaction reconciliation for account: {} from {} to {}", 
                     accountId, request.fromDate(), request.toDate());
             
-            // Business validation: Ensure path variable matches request body for consistency
-            if (!accountId.equals(request.accountId())) {
-                throw new IllegalArgumentException("Account ID in path must match request body");
-            }
-            
-            ReconcileTransactionsWebResponse response = ynabSyncApplicationService.reconcileTransactions(request);
+            ReconcileTransactionsWebResponse response = ynabSyncApplicationService.reconcileTransactions(accountId, request);
             
             logger.info("Transaction reconciliation completed for account {}: {} matched, {} missing from YNAB",
                     accountId, response.matchedTransactions(), response.missingFromYnab());
@@ -179,7 +169,7 @@ public class YnabSyncController {
             logger.info("Starting category inference for account: {} with {} transactions", 
                     accountId, request.transactions().size());
             
-            InferCategoriesWebResponse response = ynabSyncApplicationService.inferCategories(request);
+            InferCategoriesWebResponse response = ynabSyncApplicationService.inferCategories(accountId, request);
             
             logger.info("Category inference completed for account {}: {} categories inferred, {} low confidence",
                     accountId, response.categoriesInferred(), response.lowConfidenceResults());
@@ -218,7 +208,7 @@ public class YnabSyncController {
             logger.info("Starting missing transaction creation for account: {} with {} transactions", 
                     accountId, request.missingTransactions().size());
             
-            CreateMissingTransactionsWebResponse response = ynabSyncApplicationService.createMissingTransactions(request);
+            CreateMissingTransactionsWebResponse response = ynabSyncApplicationService.createMissingTransactions(accountId, request);
             
             logger.info("Missing transaction creation completed for account {}: {} successful, {} failed",
                     accountId, response.successfulCreations(), response.failedCreations());

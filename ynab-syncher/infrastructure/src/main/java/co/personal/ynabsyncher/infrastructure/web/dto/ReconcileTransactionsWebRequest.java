@@ -9,11 +9,9 @@ import java.time.LocalDate;
 /**
  * Web request DTO for reconciling transactions between YNAB and bank account.
  * Uses string representations for HTTP transport optimization.
+ * Account ID is provided via URL path parameter.
  */
 public record ReconcileTransactionsWebRequest(
-        @NotBlank(message = "Account ID is required")
-        String accountId,
-        
         @NotNull(message = "From date is required")
         LocalDate fromDate,
         

@@ -21,9 +21,9 @@ public class ReconcileTransactionsWebMapper {
     /**
      * Converts web request to domain request for transaction reconciliation.
      */
-    public ReconciliationRequest toDomainRequest(ReconcileTransactionsWebRequest webRequest) {
+    public ReconciliationRequest toDomainRequest(String accountId, ReconcileTransactionsWebRequest webRequest) {
         return ReconciliationRequest.of(
-                AccountId.of(webRequest.accountId()),
+                AccountId.of(accountId),
                 webRequest.fromDate(),
                 webRequest.toDate(),
                 ReconciliationStrategy.valueOf(webRequest.reconciliationStrategy())

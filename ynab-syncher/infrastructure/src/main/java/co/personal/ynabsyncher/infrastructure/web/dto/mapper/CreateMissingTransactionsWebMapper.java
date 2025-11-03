@@ -22,7 +22,7 @@ public class CreateMissingTransactionsWebMapper {
      * Converts web request to domain request.
      * TODO: Implement proper domain mapping when BankTransaction domain model is available
      */
-    public CreateMissingTransactionsRequest toDomainRequest(CreateMissingTransactionsWebRequest webRequest) {
+    public CreateMissingTransactionsRequest toDomainRequest(String accountId, CreateMissingTransactionsWebRequest webRequest) {
         // Simplified implementation - needs proper domain mapping
         throw new UnsupportedOperationException("Domain mapping implementation needed");
     }

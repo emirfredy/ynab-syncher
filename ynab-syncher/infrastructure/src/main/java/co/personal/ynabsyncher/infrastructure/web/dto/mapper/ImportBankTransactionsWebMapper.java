@@ -20,16 +20,17 @@ public class ImportBankTransactionsWebMapper {
     /**
      * Converts web request to domain request for bank transaction import.
      * 
+     * @param accountId the account identifier from path variable
      * @param webRequest the web layer request
      * @return domain layer request
      */
-    public ImportBankTransactionsRequest toDomainRequest(ImportBankTransactionsWebRequest webRequest) {
+    public ImportBankTransactionsRequest toDomainRequest(String accountId, ImportBankTransactionsWebRequest webRequest) {
         List<BankTransactionData> domainTransactions = webRequest.transactions().stream()
                 .map(this::toDomainTransactionData)
                 .toList();
         
         return new ImportBankTransactionsRequest(
-                webRequest.accountId(),
+                accountId,
                 domainTransactions
         );
     }

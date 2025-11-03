@@ -34,13 +34,13 @@ public class SyncTransactionsWebMapper {
     /**
      * Converts sync web request to import domain request.
      */
-    public ImportBankTransactionsRequest toImportRequest(SyncTransactionsWebRequest webRequest) {
+    public ImportBankTransactionsRequest toImportRequest(String accountId, SyncTransactionsWebRequest webRequest) {
         List<BankTransactionData> domainTransactions = webRequest.transactions().stream()
                 .map(this::toDomainTransactionData)
                 .toList();
         
         return new ImportBankTransactionsRequest(
-                webRequest.accountId(),
+                accountId,
                 domainTransactions
         );
     }

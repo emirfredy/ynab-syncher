@@ -27,6 +27,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -64,7 +65,6 @@ class YnabSyncControllerTest {
     void shouldImportBankTransactionsSuccessfully() throws Exception {
         // Given
         ImportBankTransactionsWebRequest request = new ImportBankTransactionsWebRequest(
-                "account-123",
                 List.of(new BankTransactionWebData("2024-01-15", "Test transaction", "100.00", "Test Merchant"))
         );
         
@@ -72,7 +72,7 @@ class YnabSyncControllerTest {
                 1, 1, 0, List.of(), List.of("Import completed successfully")
         );
 
-        when(ynabSyncApplicationService.importBankTransactions(any())).thenReturn(response);
+        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any())).thenReturn(response);
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/import")
@@ -86,12 +86,11 @@ class YnabSyncControllerTest {
     }
 
     @Test
-    @DisplayName("Should return 400 for account ID mismatch")
-    void shouldReturn400ForAccountIdMismatch() throws Exception {
-        // Given - Account ID in path doesn't match request body
+    @DisplayName("Should return 400 for invalid import request")
+    void shouldReturn400ForInvalidImportRequest() throws Exception {
+        // Given - Invalid request with empty transactions list
         ImportBankTransactionsWebRequest request = new ImportBankTransactionsWebRequest(
-                "different-account", // Different from path
-                List.of(new BankTransactionWebData("2024-01-15", "Test transaction", "100.00", "Test Merchant"))
+                List.of() // Empty transactions list should fail validation
         );
 
         // When & Then
@@ -103,29 +102,10 @@ class YnabSyncControllerTest {
     }
 
     @Test
-    @DisplayName("Should return 400 for invalid import request")
-    void shouldReturn400ForInvalidImportRequest() throws Exception {
-        // Given - Invalid request with blank account ID
-        ImportBankTransactionsWebRequest request = new ImportBankTransactionsWebRequest(
-                "", // Blank account ID
-                List.of(new BankTransactionWebData("2024-01-15", "Test transaction", "100.00", "Test Merchant"))
-        );
-
-        // When & Then
-        mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/import")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(header().exists("X-Correlation-ID"))
-                .andExpect(jsonPath("$.title").value("Request Validation Error"));
-    }
-
-    @Test
     @DisplayName("Should reconcile transactions successfully")
     void shouldReconcileTransactionsSuccessfully() throws Exception {
         // Given
         ReconcileTransactionsWebRequest request = new ReconcileTransactionsWebRequest(
-                "account-123",
                 LocalDate.of(2024, 1, 1),
                 LocalDate.of(2024, 1, 31),
                 "STRICT"
@@ -135,7 +115,7 @@ class YnabSyncControllerTest {
                 10, 10, 8, 2, 0, List.of(), List.of(), List.of()
         );
 
-        when(ynabSyncApplicationService.reconcileTransactions(any())).thenReturn(response);
+        when(ynabSyncApplicationService.reconcileTransactions(eq("account-123"), any())).thenReturn(response);
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/reconcile")
@@ -153,7 +133,6 @@ class YnabSyncControllerTest {
     void shouldReturn400ForInvalidReconciliationStrategy() throws Exception {
         // Given - Invalid strategy
         ReconcileTransactionsWebRequest request = new ReconcileTransactionsWebRequest(
-                "account-123",
                 LocalDate.of(2024, 1, 1),
                 LocalDate.of(2024, 1, 31),
                 "INVALID_STRATEGY"
@@ -181,7 +160,7 @@ class YnabSyncControllerTest {
                 1, 1, 0, List.of()
         );
 
-        when(ynabSyncApplicationService.inferCategories(any())).thenReturn(response);
+        when(ynabSyncApplicationService.inferCategories(eq("account-123"), any())).thenReturn(response);
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/infer-categories")
@@ -208,7 +187,7 @@ class YnabSyncControllerTest {
                 1, 1, 0, List.of("txn-789"), List.of()
         );
 
-        when(ynabSyncApplicationService.createMissingTransactions(any())).thenReturn(response);
+        when(ynabSyncApplicationService.createMissingTransactions(eq("account-123"), any())).thenReturn(response);
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/create-missing")
@@ -294,11 +273,10 @@ class YnabSyncControllerTest {
     void shouldHandleApplicationServiceExceptionsProperly() throws Exception {
         // Given
         ImportBankTransactionsWebRequest request = new ImportBankTransactionsWebRequest(
-                "account-123",
                 List.of(new BankTransactionWebData("2024-01-15", "Test transaction", "100.00", "Test Merchant"))
         );
 
-        when(ynabSyncApplicationService.importBankTransactions(any()))
+        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any()))
                 .thenThrow(new RuntimeException("Service unavailable"));
 
         // When & Then

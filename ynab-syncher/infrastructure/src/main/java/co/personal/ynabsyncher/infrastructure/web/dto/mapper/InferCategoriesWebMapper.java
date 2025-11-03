@@ -23,7 +23,7 @@ public class InferCategoriesWebMapper {
      * Converts web request to domain request.
      * TODO: Implement proper domain mapping when BankTransaction domain model is available
      */
-    public CategoryInferenceRequest toDomainRequest(InferCategoriesWebRequest webRequest) {
+    public CategoryInferenceRequest toDomainRequest(String accountId, InferCategoriesWebRequest webRequest) {
         // Simplified implementation - needs proper domain mapping
         throw new UnsupportedOperationException("Domain mapping implementation needed");
     }

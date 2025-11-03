@@ -104,19 +104,19 @@ public class YnabSyncApplicationService {
      * - Error handling and recovery strategies
      * - Proper DTO mapping between web and domain layers
      */
-    public ImportBankTransactionsWebResponse importBankTransactions(ImportBankTransactionsWebRequest webRequest) {
-        logger.info("Starting bank transaction import for account: {}", webRequest.accountId());
+    public ImportBankTransactionsWebResponse importBankTransactions(String accountId, ImportBankTransactionsWebRequest webRequest) {
+        logger.info("Starting bank transaction import for account: {}", accountId);
         
         try {
             // Convert web DTO to domain DTO
-            ImportBankTransactionsRequest domainRequest = importMapper.toDomainRequest(webRequest);
+            ImportBankTransactionsRequest domainRequest = importMapper.toDomainRequest(accountId, webRequest);
             
             // Execute domain use case
             ImportBankTransactionsResponse domainResponse = importBankTransactions.importTransactions(domainRequest);
             
             // Business logging with actual domain data
             logger.info("Bank transaction import completed for account {}: {} total, {} imported, {} duplicates skipped", 
-                    webRequest.accountId(), 
+                    accountId, 
                     domainResponse.totalProcessed(),
                     domainResponse.successfulImports(),
                     domainResponse.duplicatesSkipped());
@@ -125,7 +125,7 @@ public class YnabSyncApplicationService {
             return importMapper.toWebResponse(domainResponse);
             
         } catch (Exception e) {
-            logger.error("Failed to import transactions for account {}", webRequest.accountId(), e);
+            logger.error("Failed to import transactions for account {}", accountId, e);
             throw e; // Let global exception handler deal with it
         }
     }
@@ -139,13 +139,13 @@ public class YnabSyncApplicationService {
      * - Comprehensive business analysis of reconciliation results
      * - Proper DTO mapping and error handling
      */
-    public ReconcileTransactionsWebResponse reconcileTransactions(ReconcileTransactionsWebRequest webRequest) {
+    public ReconcileTransactionsWebResponse reconcileTransactions(String accountId, ReconcileTransactionsWebRequest webRequest) {
         logger.info("Starting transaction reconciliation for account: {} from {} to {}", 
-                webRequest.accountId(), webRequest.fromDate(), webRequest.toDate());
+                accountId, webRequest.fromDate(), webRequest.toDate());
         
         try {
             // Convert web DTO to domain DTO
-            ReconciliationRequest domainRequest = reconcileMapper.toDomainRequest(webRequest);
+            ReconciliationRequest domainRequest = reconcileMapper.toDomainRequest(accountId, webRequest);
             
             // Execute domain use case
             ReconciliationResult domainResponse = reconcileTransactions.reconcile(domainRequest);
@@ -155,14 +155,14 @@ public class YnabSyncApplicationService {
             int missingFromYnab = domainResponse.missingFromYnab().size();
             
             logger.info("Reconciliation completed for account {}: {} matched, {} missing from YNAB",
-                    webRequest.accountId(), totalMatched, missingFromYnab);
+                    accountId, totalMatched, missingFromYnab);
             
             // Business intelligence: warn if high discrepancy rate
             if (missingFromYnab > 0 && totalMatched > 0) {
                 double discrepancyRate = (double) missingFromYnab / (totalMatched + missingFromYnab);
                 if (discrepancyRate > 0.2) { // 20% threshold
                     logger.warn("High discrepancy rate ({}%) detected for account {} - {} missing transactions", 
-                            String.format("%.1f", discrepancyRate * 100), webRequest.accountId(), missingFromYnab);
+                            String.format("%.1f", discrepancyRate * 100), accountId, missingFromYnab);
                 }
             }
             
@@ -170,7 +170,7 @@ public class YnabSyncApplicationService {
             return reconcileMapper.toWebResponse(domainResponse);
             
         } catch (Exception e) {
-            logger.error("Failed to reconcile transactions for account {}", webRequest.accountId(), e);
+            logger.error("Failed to reconcile transactions for account {}", accountId, e);
             throw e;
         }
     }
@@ -189,32 +189,33 @@ public class YnabSyncApplicationService {
      * 5. Business analysis and comprehensive reporting
      * 6. Error handling with business context
      * 
-     * @param webRequest the synchronization request with account and date range
+     * @param accountId the account identifier from URL path
+     * @param webRequest the synchronization request with date range and budget data
      * @return comprehensive synchronization results with business metrics
      */
-    public SyncTransactionsWebResponse syncTransactions(SyncTransactionsWebRequest webRequest) {
+    public SyncTransactionsWebResponse syncTransactions(String accountId, SyncTransactionsWebRequest webRequest) {
         logger.info("Starting full sync for account {} from {} to {}", 
-                webRequest.accountId(), webRequest.fromDate(), webRequest.toDate());
+                accountId, webRequest.fromDate(), webRequest.toDate());
         
         try {
             // Business validation
             validateSyncRequest(webRequest);
             
             // Step 1: Import bank transactions with business context
-            logger.debug("Step 1: Importing bank transactions for account {}", webRequest.accountId());
-            ImportBankTransactionsRequest importRequest = syncMapper.toImportRequest(webRequest);
+            logger.debug("Step 1: Importing bank transactions for account {}", accountId);
+            ImportBankTransactionsRequest importRequest = syncMapper.toImportRequest(accountId, webRequest);
             ImportBankTransactionsResponse importResponse = importBankTransactions.importTransactions(importRequest);
             
             // Business intelligence: Early termination if no imports
             if (importResponse.successfulImports() == 0) {
-                logger.info("No new transactions imported for account {} - sync completed with no changes", webRequest.accountId());
+                logger.info("No new transactions imported for account {} - sync completed with no changes", accountId);
                 return createSimpleSyncResponse(importResponse, "NO_NEW_TRANSACTIONS");
             }
             
             // Step 2: Reconcile with YNAB with intelligent analysis
             logger.debug("Step 2: Reconciling {} imported transactions with YNAB", importResponse.successfulImports());
             ReconciliationRequest reconcileRequest = ReconciliationRequest.of(
-                    AccountId.of(webRequest.accountId()),
+                    AccountId.of(accountId),
                     webRequest.fromDate(),
                     webRequest.toDate(),
                     ReconciliationStrategy.valueOf(webRequest.reconciliationStrategy())
@@ -231,7 +232,7 @@ public class YnabSyncApplicationService {
                 if (discrepancyRate > 0.2) { // 20% threshold
                     logger.warn("High discrepancy rate ({}%) detected for account {} - {} missing out of {} total", 
                             String.format("%.1f", discrepancyRate * 100), 
-                            webRequest.accountId(), 
+                            accountId, 
                             missingTransactions, 
                             matchedTransactions + missingTransactions);
                 }
@@ -249,8 +250,8 @@ public class YnabSyncApplicationService {
                 
                 CreateMissingTransactionsRequest createRequest = new CreateMissingTransactionsRequest(
                         BudgetId.of(webRequest.budgetId()),
-                        AccountId.of(webRequest.accountId()), // Bank account ID
-                        AccountId.of(webRequest.accountId()), // YNAB account ID (assuming same)
+                        AccountId.of(accountId), // Bank account ID
+                        AccountId.of(accountId), // YNAB account ID (assuming same)
                         reconciliationResult.missingFromYnab()
                 );
                 createResponse = createMissingTransactions.createMissingTransactions(createRequest);
@@ -258,18 +259,18 @@ public class YnabSyncApplicationService {
                 // Business validation: Verify creation success
                 if (createResponse.successfullyCreated() < missingTransactions) {
                     logger.warn("Only {} out of {} missing transactions were created successfully for account {}", 
-                            createResponse.successfullyCreated(), missingTransactions, webRequest.accountId());
+                            createResponse.successfullyCreated(), missingTransactions, accountId);
                 }
             } else if (missingTransactions > 0) {
                 logger.info("Found {} missing transactions but auto-creation is disabled for account {}", 
-                        missingTransactions, webRequest.accountId());
+                        missingTransactions, accountId);
             }
             
             // Business metrics and comprehensive reporting
             String syncStatus = determineSyncStatus(importResponse, reconciliationResult, createResponse);
             
             logger.info("Sync completed for account {}: {} imported, {} reconciled, {} created, status: {}", 
-                    webRequest.accountId(), 
+                    accountId, 
                     importResponse.successfulImports(),
                     matchedTransactions,
                     createResponse != null ? createResponse.successfullyCreated() : 0,
@@ -280,7 +281,7 @@ public class YnabSyncApplicationService {
             
         } catch (Exception e) {
             logger.error("Sync failed for account {} from {} to {}", 
-                    webRequest.accountId(), webRequest.fromDate(), webRequest.toDate(), e);
+                    accountId, webRequest.fromDate(), webRequest.toDate(), e);
             throw e; // Let global exception handler provide proper HTTP response
         }
     }
@@ -348,19 +349,20 @@ public class YnabSyncApplicationService {
      * - Confidence scoring and quality thresholds
      * - Proper DTO mapping between web and domain layers
      */
-    public InferCategoriesWebResponse inferCategories(InferCategoriesWebRequest webRequest) {
-        logger.info("Starting category inference for budget: {} with {} transactions", 
-                webRequest.budgetId(), webRequest.transactions().size());
+    public InferCategoriesWebResponse inferCategories(String accountId, InferCategoriesWebRequest webRequest) {
+        logger.info("Starting category inference for account: {} budget: {} with {} transactions", 
+                accountId, webRequest.budgetId(), webRequest.transactions().size());
         
         try {
             // Convert web DTO to domain DTO
-            CategoryInferenceRequest domainRequest = inferCategoriesMapper.toDomainRequest(webRequest);
+            CategoryInferenceRequest domainRequest = inferCategoriesMapper.toDomainRequest(accountId, webRequest);
             
             // Execute domain use case
             CategoryInferenceResponse domainResponse = inferTransactionCategories.inferCategories(domainRequest);
             
             // Business analysis and logging
-            logger.info("Category inference completed for budget {}: {} successful, {} failed", 
+            logger.info("Category inference completed for account {} budget {}: {} successful, {} failed", 
+                    accountId,
                     webRequest.budgetId(), 
                     domainResponse.successfulInferences(),
                     domainResponse.failedInferences());
@@ -418,13 +420,13 @@ public class YnabSyncApplicationService {
      * - Proper DTO mapping between web and domain layers
      * - Comprehensive result reporting
      */
-    public CreateMissingTransactionsWebResponse createMissingTransactions(CreateMissingTransactionsWebRequest webRequest) {
-        logger.info("Starting standalone missing transaction creation for account: {} with {} transactions", 
-                webRequest.ynabAccountId(), webRequest.missingTransactions().size());
+    public CreateMissingTransactionsWebResponse createMissingTransactions(String accountId, CreateMissingTransactionsWebRequest webRequest) {
+        logger.info("Starting missing transaction creation for account: {} with {} transactions", 
+                accountId, webRequest.missingTransactions().size());
         
         try {
             // Convert web DTO to domain DTO
-            CreateMissingTransactionsRequest domainRequest = createMissingTransactionsMapper.toDomainRequest(webRequest);
+            CreateMissingTransactionsRequest domainRequest = createMissingTransactionsMapper.toDomainRequest(accountId, webRequest);
             
             // Execute domain use case
             CreateMissingTransactionsResponse domainResponse = createMissingTransactions.createMissingTransactions(domainRequest);
