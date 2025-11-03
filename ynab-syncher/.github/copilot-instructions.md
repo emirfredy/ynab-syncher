@@ -182,8 +182,8 @@ mvn -pl domain org.pitest:pitest-maven:mutationCoverage
 # Interactive development mode (Phase 3) - TUI test selection
 ./scripts/run-tests.sh --interactive
 
-# Quick development feedback with parallel execution (fastest)
-./scripts/run-tests.sh --quick --parallel --fail-fast
+# Quick development feedback (parallel by default, 60% faster)
+./scripts/run-tests.sh --quick --fail-fast
 
 # Architecture validation before structural changes
 ./scripts/run-tests.sh --only architecture --fail-fast
@@ -191,23 +191,23 @@ mvn -pl domain org.pitest:pitest-maven:mutationCoverage
 # Domain-specific testing during feature development
 ./scripts/run-tests.sh --module domain --fail-fast
 
-# Unit and integration tests with parallel execution
-./scripts/run-tests.sh --only unit integration --parallel --verbose
+# Unit and integration tests (parallel by default)
+./scripts/run-tests.sh --only unit integration --verbose
 
-# Full comprehensive test suite with parallel execution
-./scripts/run-tests.sh --parallel --fail-fast
-
-# Comprehensive validation including mutation testing (sequential)
+# Full comprehensive test suite (parallel by default)
 ./scripts/run-tests.sh --fail-fast
+
+# Force sequential execution when needed
+./scripts/run-tests.sh --sequential --verbose
 ```
 
 **Enhanced Script Benefits:**
 
+- **Parallel by Default**: Optimized performance with 60% faster execution out of the box
 - **Interactive Development Mode**: `--interactive` provides TUI-based test selection with real-time status display
 - **Fail-Fast Mode**: `--fail-fast` provides immediate error feedback with debugging suggestions
 - **Intelligent Filtering**: `--only <types>` and `--module <name>` for targeted testing
 - **Quick Feedback**: `--quick` flag skips slow mutation testing for rapid development cycles
-- **Parallel Execution**: `--parallel` runs independent tests concurrently for up to 60% performance boost
 - **Smart Dependency Management**: Independent tests run in parallel, dependent tests run sequentially
 - **Comprehensive Validation**: Full execution includes mutation testing and coverage analysis
 - **Detailed Reporting**: Comprehensive test results summary with timing and metrics

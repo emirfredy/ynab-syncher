@@ -48,7 +48,7 @@ TARGET_MODULE=""
 QUICK_MODE=false
 
 # Phase 2: Parallel execution flags
-PARALLEL_MODE=false
+PARALLEL_MODE=true
 MAX_PARALLEL_JOBS=0
 
 # Phase 3: Interactive development mode flags
@@ -64,7 +64,8 @@ show_usage() {
     echo "  --only <tests>       Run only specified test types (space-separated)"
     echo "  --module <module>    Run tests for specific module only (domain or infrastructure)"
     echo "  --verbose, -v        Enable verbose output"
-    echo "  --parallel           Enable parallel test execution (60% faster)"
+    echo "  --parallel           Enable parallel test execution (60% faster) [DEFAULT]"
+    echo "  --sequential         Force sequential test execution"
     echo "  --jobs <n>           Maximum parallel jobs (default: auto-detect)"
     echo "  --interactive, -i    Interactive test selection menu"
     echo "  --help, -h           Show this help message"
@@ -78,19 +79,19 @@ show_usage() {
     echo "  build                Full build verification"
     echo ""
     echo "EXAMPLES:"
-    echo "  $0                              # Run all tests"
-    echo "  $0 --quick                      # Quick development feedback"
-    echo "  $0 --fail-fast                  # Stop on first failure"
+    echo "  $0                              # Run all tests (parallel by default)"
+    echo "  $0 --quick                      # Quick development feedback (parallel)"
+    echo "  $0 --fail-fast                  # Stop on first failure (parallel)"
     echo "  $0 --interactive                # Interactive test selection menu"
-    echo "  $0 --only architecture          # Run only architecture tests"
-    echo "  $0 --only unit integration      # Run unit and integration tests"
-    echo "  $0 --module domain              # Run only domain module tests"
-    echo "  $0 --quick --fail-fast          # Quick tests with fail-fast"
+    echo "  $0 --only architecture          # Run only architecture tests (parallel)"
+    echo "  $0 --only unit integration      # Run unit and integration tests (parallel)"
+    echo "  $0 --module domain              # Run only domain module tests (parallel)"
+    echo "  $0 --quick --fail-fast          # Quick tests with fail-fast (parallel)"
     echo ""
-    echo "  # Parallel execution (Phase 2)"
-    echo "  $0 --parallel                   # Parallel execution (60% faster)"
-    echo "  $0 --quick --parallel --fail-fast  # Super-fast development feedback"
-    echo "  $0 --parallel --jobs 4          # Parallel with custom job count"
+    echo "  # Execution modes"
+    echo "  $0 --sequential                 # Force sequential execution (slower)"
+    echo "  $0 --jobs 4                     # Parallel with custom job count"
+    echo "  $0 --quick --fail-fast          # Super-fast development feedback"
 }
 
 # Parse command line arguments
@@ -128,6 +129,10 @@ parse_arguments() {
                 ;;
             --parallel)
                 PARALLEL_MODE=true
+                shift
+                ;;
+            --sequential)
+                PARALLEL_MODE=false
                 shift
                 ;;
             --jobs)
@@ -287,6 +292,10 @@ setup_parallel_execution() {
         
         if [[ "$VERBOSE" == "true" ]]; then
             echo -e "${CYAN}⚡ Parallel Mode: Enabled (${MAX_PARALLEL_JOBS} jobs)${NC}"
+        fi
+    else
+        if [[ "$VERBOSE" == "true" ]]; then
+            echo -e "${YELLOW}🔄 Sequential Mode: Enabled (slower execution)${NC}"
         fi
     fi
 }

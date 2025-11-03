@@ -91,12 +91,13 @@ The `run-tests.sh` script provides production-grade test automation with:
 - **`--verbose`** - Detailed execution information
 - **`--help`** - Comprehensive usage guide
 
-**Parallel Execution (Phase 2):**
+**Parallel Execution (Phase 2 - DEFAULT):**
 
-- **`--parallel`** - Run independent tests concurrently for faster execution
+- **Parallel by Default** - All tests run concurrently for optimal performance (60% faster)
+- **`--sequential`** - Override to force sequential execution when needed
 - **`--jobs <n>`** - Control number of parallel jobs (default: auto-detect CPU cores)
 - **Smart Dependency Management** - Independent tests run in parallel, dependent tests run sequentially
-- **Performance Boost** - Up to 60% faster execution in parallel mode
+- **Performance Boost** - Up to 60% faster execution with intelligent scheduling
 
 **Interactive Development Mode (Phase 3):**
 
@@ -108,8 +109,8 @@ The `run-tests.sh` script provides production-grade test automation with:
 **Usage Examples:**
 
 ```bash
-# Development workflow - quick feedback with parallel execution
-./scripts/run-tests.sh --quick --parallel --fail-fast
+# Development workflow - quick feedback (parallel by default)
+./scripts/run-tests.sh --quick --fail-fast
 
 # Interactive development mode (Phase 3) - TUI test selection
 ./scripts/run-tests.sh --interactive
@@ -117,16 +118,19 @@ The `run-tests.sh` script provides production-grade test automation with:
 # Architecture validation before structural changes
 ./scripts/run-tests.sh --only architecture --fail-fast
 
-# Full test suite with parallel execution for CI/CD
-./scripts/run-tests.sh --parallel --fail-fast
+# Full test suite for CI/CD (parallel by default)
+./scripts/run-tests.sh --fail-fast
 
 # Domain-specific testing with custom parallel jobs
-./scripts/run-tests.sh --module domain --parallel --jobs 4
+./scripts/run-tests.sh --module domain --jobs 4
 
-# Unit and integration tests only, parallel execution
-./scripts/run-tests.sh --only unit integration --parallel
+# Unit and integration tests only (parallel by default)
+./scripts/run-tests.sh --only unit integration
 
-# Comprehensive validation with mutation testing (sequential)
+# Force sequential execution when needed
+./scripts/run-tests.sh --sequential --verbose
+
+# Comprehensive validation with mutation testing
 ./scripts/run-tests.sh --verbose
 ```
 
