@@ -1,0 +1,75 @@
+meta {
+  name: Save Category Mappings - Valid Request (Admin Role)
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/category-mappings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "categoryMappings": [
+      {
+        "mappingId": "mapping-001",
+        "categoryId": "ynab-category-123",
+        "categoryName": "Groceries",
+        "patterns": [
+          "GROCERY",
+          "SUPERMARKET",
+          "MARKET",
+          "WALMART",
+          "TARGET"
+        ],
+        "confidence": 0.95,
+        "source": "ML_INFERENCE"
+      },
+      {
+        "mappingId": "mapping-002",
+        "categoryId": "ynab-category-456", 
+        "categoryName": "Gas & Fuel",
+        "patterns": [
+          "GAS STATION",
+          "SHELL",
+          "EXXON",
+          "CHEVRON",
+          "BP"
+        ],
+        "confidence": 0.88,
+        "source": "USER_FEEDBACK"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.totalMappings: eq 2
+  res.body.savedNew: gte 0
+  res.body.updatedExisting: gte 0
+  res.body.skipped: gte 0
+}
+
+tests {
+  test("Should successfully save category mappings with admin role", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.totalMappings).to.equal(2);
+    expect(res.body.savedNew + res.body.updatedExisting + res.body.skipped).to.equal(2);
+  });
+  
+  test("Should include processing results", function() {
+    expect(res.body.status).to.be.a('string');
+    expect(res.body.processingMessages).to.be.an('array');
+  });
+  
+  test("Should include correlation ID in response headers", function() {
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+  });
+}

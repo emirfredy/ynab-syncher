@@ -1,0 +1,57 @@
+meta {
+  name: Import Bank Transactions - Validation Errors
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/accounts/test-account-123/transactions/import
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "transactions": [
+      {
+        "date": "",
+        "description": "",
+        "amount": "",
+        "merchantName": "Valid Merchant"
+      },
+      {
+        "date": "2024-01-15",
+        "description": "Valid Transaction",
+        "amount": "invalid-amount",
+        "merchantName": "Another Merchant"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.title: eq "Request Validation Error"
+  res.body.type: eq "/errors/request-validation-error"
+}
+
+tests {
+  test("Should return validation errors for invalid input", function() {
+    expect(res.status).to.equal(400);
+    expect(res.body.title).to.equal('Request Validation Error');
+    expect(res.body.type).to.equal('/errors/request-validation-error');
+  });
+  
+  test("Should include field validation details", function() {
+    expect(res.body.fieldErrors).to.be.an('object');
+    expect(Object.keys(res.body.fieldErrors).length).to.be.greaterThan(0);
+  });
+  
+  test("Should include correlation ID in error response", function() {
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+  });
+}

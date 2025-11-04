@@ -1,0 +1,51 @@
+meta {
+  name: Reconcile Transactions - Valid Request (User Role)
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/accounts/test-account-123/reconcile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{testUserToken}}
+}
+
+body:json {
+  {
+    "dateFrom": "2024-01-01",
+    "dateTo": "2024-01-31",
+    "reconciliationStrategy": "DATE_AMOUNT_MATCH"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.totalBankTransactions: gte 0
+  res.body.totalYnabTransactions: gte 0
+  res.body.matchedTransactions: gte 0
+}
+
+tests {
+  test("Should successfully reconcile transactions with user role", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.totalBankTransactions).to.be.a('number');
+    expect(res.body.totalYnabTransactions).to.be.a('number');
+    expect(res.body.matchedTransactions).to.be.a('number');
+    expect(res.body.missingFromYnab).to.be.a('number');
+    expect(res.body.missingFromBank).to.be.a('number');
+  });
+  
+  test("Should include transaction lists", function() {
+    expect(res.body.matches).to.be.an('array');
+    expect(res.body.missingFromYnabList).to.be.an('array');
+    expect(res.body.missingFromBankList).to.be.an('array');
+  });
+  
+  test("Should include correlation ID in response headers", function() {
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+  });
+}

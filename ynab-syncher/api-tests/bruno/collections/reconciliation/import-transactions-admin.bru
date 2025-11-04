@@ -1,0 +1,68 @@
+meta {
+  name: Import Bank Transactions - Valid Request (Admin)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/accounts/test-account-123/transactions/import
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "transactions": [
+      {
+        "date": "2024-01-15",
+        "description": "Grocery Store Purchase",
+        "amount": "-25.99",
+        "merchantName": "Local Grocery"
+      },
+      {
+        "date": "2024-01-16", 
+        "description": "Gas Station Fill-up",
+        "amount": "-45.50",
+        "merchantName": "Shell Gas"
+      },
+      {
+        "date": "2024-01-17",
+        "description": "Salary Deposit",
+        "amount": "2500.00",
+        "merchantName": "Company Payroll"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.totalTransactions: eq 3
+  res.body.successfulImports: gte 0
+  res.body.failedImports: gte 0
+  res.body.processingMessages: isDefined
+}
+
+tests {
+  test("Should successfully import bank transactions with admin role", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.totalTransactions).to.equal(3);
+    expect(res.body.successfulImports + res.body.failedImports).to.equal(3);
+    expect(res.body.processingMessages).to.be.an('array');
+  });
+  
+  test("Should include correlation ID in response headers", function() {
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+    expect(res.headers['x-correlation-id']).to.have.lengthOf.greaterThan(0);
+  });
+  
+  test("Response should include valid processing information", function() {
+    expect(res.body.validationErrors).to.be.an('array');
+    expect(res.body.processingMessages).to.be.an('array');
+    expect(res.body.processingMessages.length).to.be.greaterThan(0);
+  });
+}

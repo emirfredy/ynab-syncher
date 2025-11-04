@@ -1,18 +1,15 @@
-{
-  "name": "Docker Development",
-  "variables": {
-    "baseUrl": "http://localhost:8080",
-    "keycloakUrl": "http://localhost:8081",
-    "realm": "ynab-syncher",
-    "clientId": "ynab-syncher-api",
-    "clientSecret": "ynab-syncher-secret-123",
-    "adminToken": "",
-    "testUserToken": "",
-    "readonlyToken": "",
-    "ynabApiUrl": "https://api.youneedabudget.com/v1",
-    "ynabAccessToken": "{{process.env.YNAB_ACCESS_TOKEN}}",
-    "apiVersion": "v1",
-    "timeout": "30000",
-    "profile": "docker"
-  }
+vars {
+  baseUrl: http://localhost:8080
+  keycloakUrl: http://localhost:8081
+  realm: ynab-syncher
+  clientId: ynab-syncher-api
+  clientSecret: ynab-syncher-secret-123
+  adminToken: 
+  testUserToken: 
+  readonlyToken: 
+  ynabApiUrl: https://api.youneedabudget.com/v1
+  ynabAccessToken: {{process.env.YNAB_ACCESS_TOKEN}}
+  apiVersion: v1
+  timeout: 30000
+  profile: docker
 }

@@ -1,0 +1,60 @@
+meta {
+  name: Infer Categories - Valid Request (Readonly Role)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/accounts/test-account-123/transactions/infer-categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{readonlyToken}}
+}
+
+body:json {
+  {
+    "transactions": [
+      {
+        "externalId": "txn-001",
+        "description": "AMAZON.COM PURCHASE",
+        "amount": "-49.99",
+        "date": "2024-01-15",
+        "merchantName": "Amazon"
+      },
+      {
+        "externalId": "txn-002", 
+        "description": "SHELL GAS STATION",
+        "amount": "-35.00",
+        "date": "2024-01-16",
+        "merchantName": "Shell"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.totalTransactions: eq 2
+  res.body.categoriesInferred: gte 0
+}
+
+tests {
+  test("Should successfully infer categories with readonly role", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.totalTransactions).to.equal(2);
+    expect(res.body.categoriesInferred).to.be.a('number');
+    expect(res.body.lowConfidenceResults).to.be.a('number');
+  });
+  
+  test("Should include category inference results", function() {
+    expect(res.body.categoryInferences).to.be.an('array');
+    expect(res.body.categoryInferences).to.have.lengthOf(2);
+  });
+  
+  test("Should include correlation ID in response headers", function() {
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+  });
+}

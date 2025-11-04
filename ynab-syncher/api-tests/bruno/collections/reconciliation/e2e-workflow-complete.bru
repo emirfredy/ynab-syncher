@@ -1,0 +1,68 @@
+meta {
+  name: End-to-End Workflow - Complete Reconciliation Process
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/accounts/e2e-test-account/transactions/import
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{adminToken}}
+}
+
+body:json {
+  {
+    "transactions": [
+      {
+        "date": "2024-01-25",
+        "description": "E2E Test - Grocery Store",
+        "amount": "-75.48",
+        "merchantName": "Whole Foods Market"
+      },
+      {
+        "date": "2024-01-26",
+        "description": "E2E Test - Gas Station",
+        "amount": "-42.33",
+        "merchantName": "Shell Station"
+      },
+      {
+        "date": "2024-01-27",
+        "description": "E2E Test - Salary",
+        "amount": "3000.00",
+        "merchantName": "Company Inc"
+      }
+    ]
+  }
+}
+
+vars:post-response {
+  e2eImportResults: res.body
+}
+
+assert {
+  res.status: eq 200
+  res.body.totalTransactions: eq 3
+  res.body.successfulImports: gte 0
+}
+
+tests {
+  test("Step 1: Import bank transactions should succeed", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.totalTransactions).to.equal(3);
+    expect(res.body.processingMessages).to.be.an('array');
+  });
+  
+  test("Should prepare data for subsequent reconciliation steps", function() {
+    expect(res.body.successfulImports + res.body.failedImports).to.equal(3);
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+  });
+  
+  // Store results for potential chaining with other requests
+  test("Store import results for workflow tracking", function() {
+    console.log("Import completed:", res.body);
+  });
+}

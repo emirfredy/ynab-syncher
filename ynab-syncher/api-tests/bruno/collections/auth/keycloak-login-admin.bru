@@ -1,0 +1,49 @@
+meta {
+  name: Keycloak Login - Admin User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{keycloakUrl}}/realms/{{realm}}/protocol/openid-connect/token
+  body: formUrlEncoded
+  auth: none
+}
+
+body:form-urlencoded {
+  grant_type: password
+  client_id: {{clientId}}
+  client_secret: {{clientSecret}}
+  username: admin
+  password: admin123
+}
+
+vars:post-response {
+  adminToken: res.body.access_token
+  adminRefreshToken: res.body.refresh_token
+  adminTokenType: res.body.token_type
+  adminExpiresIn: res.body.expires_in
+}
+
+assert {
+  res.status: eq 200
+  res.body.access_token: isDefined
+  res.body.token_type: eq "Bearer"
+  res.body.expires_in: gt 0
+}
+
+tests {
+  test("Should return valid JWT token for admin user", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.access_token).to.be.a('string');
+    expect(res.body.token_type).to.equal('Bearer');
+    expect(res.body.expires_in).to.be.a('number');
+    expect(res.body.expires_in).to.be.greaterThan(0);
+  });
+  
+  test("Token should be valid JWT format", function() {
+    const token = res.body.access_token;
+    const parts = token.split('.');
+    expect(parts).to.have.lengthOf(3);
+  });
+}

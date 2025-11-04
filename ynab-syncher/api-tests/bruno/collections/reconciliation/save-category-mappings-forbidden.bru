@@ -1,0 +1,50 @@
+meta {
+  name: Save Category Mappings - Forbidden (User Role)
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/category-mappings
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{testUserToken}}
+}
+
+body:json {
+  {
+    "categoryMappings": [
+      {
+        "mappingId": "unauthorized-mapping-001",
+        "categoryId": "ynab-category-789",
+        "categoryName": "Test Category",
+        "patterns": [
+          "TEST PATTERN"
+        ],
+        "confidence": 0.50,
+        "source": "USER_FEEDBACK"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 403
+  res.body.title: eq "Forbidden"
+  res.body.type: eq "/errors/access-denied"
+}
+
+tests {
+  test("Should deny access for user role on category-mappings endpoint", function() {
+    expect(res.status).to.equal(403);
+    expect(res.body.title).to.equal('Forbidden');
+    expect(res.body.type).to.equal('/errors/access-denied');
+  });
+  
+  test("Should include correlation ID in error response", function() {
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+  });
+}

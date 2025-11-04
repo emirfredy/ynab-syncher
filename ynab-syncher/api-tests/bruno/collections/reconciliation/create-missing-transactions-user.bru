@@ -1,0 +1,63 @@
+meta {
+  name: Create Missing Transactions - Valid Request (User Role)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/accounts/test-account-123/transactions/create-missing
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{testUserToken}}
+}
+
+body:json {
+  {
+    "missingTransactions": [
+      {
+        "externalId": "missing-txn-001",
+        "description": "Missing Transaction 1",
+        "amount": "-25.00",
+        "date": "2024-01-20",
+        "categoryId": "category-123",
+        "categoryName": "Groceries"
+      },
+      {
+        "externalId": "missing-txn-002",
+        "description": "Missing Transaction 2", 
+        "amount": "-45.50",
+        "date": "2024-01-21",
+        "categoryId": "category-456",
+        "categoryName": "Gas"
+      }
+    ],
+    "createStrategy": "CREATE_WITH_CATEGORY"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.totalRequested: eq 2
+  res.body.successfulCreations: gte 0
+  res.body.failedCreations: gte 0
+}
+
+tests {
+  test("Should successfully create missing transactions with user role", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.totalRequested).to.equal(2);
+    expect(res.body.successfulCreations + res.body.failedCreations).to.equal(2);
+  });
+  
+  test("Should include creation results", function() {
+    expect(res.body.createdTransactions).to.be.an('array');
+    expect(res.body.creationErrors).to.be.an('array');
+  });
+  
+  test("Should include correlation ID in response headers", function() {
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+  });
+}
