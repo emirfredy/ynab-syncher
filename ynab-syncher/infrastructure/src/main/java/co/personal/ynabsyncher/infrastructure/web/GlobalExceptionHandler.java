@@ -7,6 +7,8 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -97,7 +99,45 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles Spring Security authorization exceptions (403 Forbidden).
+     * These should not be caught by the generic exception handler.
+     */
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleAuthorizationDenied(AuthorizationDeniedException ex) {
+        logger.warn("Access denied: {}", ex.getMessage());
+        
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, "Access denied");
+        problemDetail.setTitle("Forbidden");
+        problemDetail.setType(URI.create("/errors/access-denied"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .header(CORRELATION_ID_HEADER, getCorrelationId())
+                .body(problemDetail);
+    }
+
+    /**
+     * Handles Spring Security authentication exceptions (401 Unauthorized).
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ProblemDetail> handleAuthentication(AuthenticationException ex) {
+        logger.warn("Authentication failed: {}", ex.getMessage());
+        
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, "Authentication required");
+        problemDetail.setTitle("Unauthorized");
+        problemDetail.setType(URI.create("/errors/authentication-required"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .header(CORRELATION_ID_HEADER, getCorrelationId())
+                .body(problemDetail);
+    }
+
+    /**
      * Handles unexpected internal errors.
+     * NOTE: Spring Security exceptions are handled above and should not reach this handler.
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ProblemDetail> handleInternalError(Exception ex) {

@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -76,11 +77,14 @@ public class YnabSyncController {
      * Business Operation: Import bank transaction data into the reconciliation system
      * Workflow Position: Step 1 of YNAB-Bank reconciliation process
      * 
+     * Security: Requires USER role or higher (ADMIN also allowed)
+     * 
      * @param accountId the bank account identifier
      * @param request the import request containing transaction data
      * @return the import response with results and statistics
      */
     @PostMapping("/accounts/{accountId}/transactions/import")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ImportBankTransactionsWebResponse> importBankTransactions(
             @PathVariable String accountId,
             @Valid @RequestBody ImportBankTransactionsWebRequest request) {
@@ -114,11 +118,14 @@ public class YnabSyncController {
      * Business Operation: Match bank transactions with existing YNAB transactions
      * Workflow Position: Step 2 of YNAB-Bank reconciliation process
      * 
+     * Security: Requires USER role or higher (ADMIN also allowed)
+     * 
      * @param accountId the bank account identifier
      * @param request the reconciliation request containing date range and strategy
      * @return the reconciliation response with matched and missing transactions
      */
     @PostMapping("/accounts/{accountId}/reconcile")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ReconcileTransactionsWebResponse> reconcileTransactions(
             @PathVariable String accountId,
             @Valid @RequestBody ReconcileTransactionsWebRequest request) {
@@ -153,11 +160,14 @@ public class YnabSyncController {
      * Business Operation: ML-powered category recommendation for bank transactions
      * Workflow Position: Optional step for enhanced categorization
      * 
+     * Security: Requires READ_ONLY role or higher (read-only operation)
+     * 
      * @param accountId the bank account identifier
      * @param request the inference request containing transactions to categorize
      * @return the inference response with category suggestions and confidence scores
      */
     @PostMapping("/accounts/{accountId}/transactions/infer-categories")
+    @PreAuthorize("hasRole('READ_ONLY') or hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<InferCategoriesWebResponse> inferCategories(
             @PathVariable String accountId,
             @Valid @RequestBody InferCategoriesWebRequest request) {
@@ -192,11 +202,14 @@ public class YnabSyncController {
      * Business Operation: Create YNAB transactions for unmatched bank transactions
      * Workflow Position: Step 3 of YNAB-Bank reconciliation process
      * 
+     * Security: Requires USER role or higher (creates data in YNAB)
+     * 
      * @param accountId the bank account identifier
      * @param request the creation request containing missing transaction data
      * @return the creation response with results and statistics
      */
     @PostMapping("/accounts/{accountId}/transactions/create-missing")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<CreateMissingTransactionsWebResponse> createMissingTransactions(
             @PathVariable String accountId,
             @Valid @RequestBody CreateMissingTransactionsWebRequest request) {
@@ -231,10 +244,13 @@ public class YnabSyncController {
      * Business Operation: Global ML knowledge base management (cross-account)
      * Workflow Position: ML model improvement and learning phase
      * 
+     * Security: Requires ADMIN role (affects global ML model)
+     * 
      * @param request the save request containing category mappings to persist
      * @return the save response with persistence results and statistics
      */
     @PostMapping("/category-mappings")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<SaveCategoryMappingsWebResponse> saveCategoryMappings(
             @Valid @RequestBody SaveCategoryMappingsWebRequest request) {
         
