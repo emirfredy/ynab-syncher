@@ -143,9 +143,20 @@ log_info "Generate Tokens: $GENERATE_TOKENS"
 check_prerequisites() {
     log_info "Checking prerequisites..."
     
-    # Check if Bruno CLI is installed
-    if ! command -v bruno &> /dev/null; then
-        log_error "Bruno CLI not found. Install with: npm install -g @usebruno/cli"
+    # Check if Bruno CLI is installed (try both global and npx)
+    if command -v bruno &> /dev/null; then
+        BRUNO_CMD="bruno"
+        log_debug "Using global Bruno CLI"
+    elif command -v npx &> /dev/null; then
+        BRUNO_CMD="npx @usebruno/cli"
+        log_debug "Using Bruno CLI via npx"
+        # Verify npx can run Bruno
+        if ! npx @usebruno/cli --version &> /dev/null; then
+            log_error "Bruno CLI not available via npx. Install with: npm install -g @usebruno/cli"
+            exit 1
+        fi
+    else
+        log_error "Neither Bruno CLI nor npx found. Install Node.js and run: npm install -g @usebruno/cli"
         exit 1
     fi
     
@@ -203,12 +214,12 @@ run_test_collection() {
     log_info "Running $collection_name tests..."
     
     if [[ "$DRY_RUN" == "true" ]]; then
-        log_info "[DRY RUN] Would execute: bruno run $collection_path --env $ENVIRONMENT"
+        log_info "[DRY RUN] Would execute: $BRUNO_CMD run $collection_path --env $ENVIRONMENT"
         return 0
     fi
     
-    # Run Bruno tests
-    if bruno run "$collection_path" --env "$ENVIRONMENT" 2>&1; then
+    # Run Bruno tests using detected command
+    if $BRUNO_CMD run "$collection_path" --env "$ENVIRONMENT" 2>&1; then
         log_info "✅ $collection_name tests completed successfully"
         return 0
     else
