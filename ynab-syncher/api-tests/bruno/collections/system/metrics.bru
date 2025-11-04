@@ -1,0 +1,29 @@
+meta {
+  name: Metrics Endpoint
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/actuator/metrics
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.names: isDefined
+}
+
+tests {
+  test("Should return metrics list", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.names).to.be.an('array');
+  });
+  
+  test("Should include standard Spring Boot metrics", function() {
+    const metricNames = res.body.names;
+    expect(metricNames).to.include('jvm.memory.used');
+    expect(metricNames).to.include('http.server.requests');
+  });
+}

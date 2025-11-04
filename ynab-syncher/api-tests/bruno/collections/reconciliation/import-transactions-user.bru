@@ -1,0 +1,53 @@
+meta {
+  name: Import Bank Transactions - Valid Request (User Role)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/accounts/test-account-456/transactions/import
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{testUserToken}}
+}
+
+body:json {
+  {
+    "transactions": [
+      {
+        "date": "2024-01-18",
+        "description": "Coffee Shop Purchase",
+        "amount": "-4.75",
+        "merchantName": "Starbucks"
+      },
+      {
+        "date": "2024-01-19",
+        "description": "Online Shopping",
+        "amount": "-89.99",
+        "merchantName": "Amazon"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.totalTransactions: eq 2
+  res.body.successfulImports: gte 0
+  res.body.failedImports: gte 0
+}
+
+tests {
+  test("Should successfully import bank transactions with user role", function() {
+    expect(res.status).to.equal(200);
+    expect(res.body.totalTransactions).to.equal(2);
+    expect(res.body.successfulImports + res.body.failedImports).to.equal(2);
+  });
+  
+  test("Should include correlation ID in response headers", function() {
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+  });
+}

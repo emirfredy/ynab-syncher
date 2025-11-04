@@ -1,0 +1,25 @@
+meta {
+  name: Application Info
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/actuator/info
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("Should return application information", function() {
+    expect(res.status).to.equal(200);
+  });
+  
+  test("Response should be valid JSON", function() {
+    expect(res.body).to.be.an('object');
+  });
+}

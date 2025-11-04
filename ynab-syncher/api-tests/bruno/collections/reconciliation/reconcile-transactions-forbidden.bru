@@ -1,0 +1,41 @@
+meta {
+  name: Reconcile Transactions - Forbidden (Readonly Role)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/accounts/test-account-456/reconcile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{readonlyToken}}
+}
+
+body:json {
+  {
+    "dateFrom": "2024-01-01",
+    "dateTo": "2024-01-31",
+    "reconciliationStrategy": "DATE_AMOUNT_MATCH"
+  }
+}
+
+assert {
+  res.status: eq 403
+  res.body.title: eq "Forbidden"
+  res.body.type: eq "/errors/access-denied"
+}
+
+tests {
+  test("Should deny access for readonly role on reconcile endpoint", function() {
+    expect(res.status).to.equal(403);
+    expect(res.body.title).to.equal('Forbidden');
+    expect(res.body.type).to.equal('/errors/access-denied');
+  });
+  
+  test("Should include correlation ID in error response", function() {
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+  });
+}

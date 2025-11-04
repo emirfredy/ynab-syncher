@@ -1,0 +1,49 @@
+meta {
+  name: Create Missing Transactions - Forbidden (Readonly Role)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/accounts/test-account-456/transactions/create-missing
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{readonlyToken}}
+}
+
+body:json {
+  {
+    "missingTransactions": [
+      {
+        "externalId": "unauthorized-txn-001",
+        "description": "Unauthorized Creation Attempt",
+        "amount": "-10.00",
+        "date": "2024-01-22",
+        "categoryId": "category-123",
+        "categoryName": "Test Category"
+      }
+    ],
+    "createStrategy": "CREATE_WITH_CATEGORY"
+  }
+}
+
+assert {
+  res.status: eq 403
+  res.body.title: eq "Forbidden"
+  res.body.type: eq "/errors/access-denied"
+}
+
+tests {
+  test("Should deny access for readonly role on create-missing endpoint", function() {
+    expect(res.status).to.equal(403);
+    expect(res.body.title).to.equal('Forbidden');
+    expect(res.body.type).to.equal('/errors/access-denied');
+  });
+  
+  test("Should include correlation ID in error response", function() {
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+  });
+}

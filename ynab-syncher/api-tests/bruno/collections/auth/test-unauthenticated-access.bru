@@ -1,0 +1,44 @@
+meta {
+  name: Test Unauthenticated Access
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/accounts/test-account-123/transactions/import
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "transactions": [
+      {
+        "externalId": "test-transaction-1",
+        "description": "Test Transaction",
+        "amount": -25.99,
+        "date": "2024-01-15",
+        "category": "Groceries"
+      }
+    ],
+    "importStrategy": "MERGE_BY_DATE_AMOUNT"
+  }
+}
+
+assert {
+  res.status: eq 401
+  res.body.title: eq "Unauthorized"
+  res.body.type: eq "/errors/authentication-error"
+}
+
+tests {
+  test("Should deny access without authentication", function() {
+    expect(res.status).to.equal(401);
+    expect(res.body.title).to.equal('Unauthorized');
+    expect(res.body.type).to.equal('/errors/authentication-error');
+  });
+  
+  test("Should include correlation ID in response", function() {
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+  });
+}

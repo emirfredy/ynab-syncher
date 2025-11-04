@@ -1,0 +1,46 @@
+meta {
+  name: Import Bank Transactions - Forbidden (Readonly Role)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/{{apiVersion}}/reconciliation/accounts/test-account-789/transactions/import
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{readonlyToken}}
+}
+
+body:json {
+  {
+    "transactions": [
+      {
+        "date": "2024-01-20",
+        "description": "Unauthorized Transaction Attempt",
+        "amount": "-10.00",
+        "merchantName": "Test Merchant"
+      }
+    ]
+  }
+}
+
+assert {
+  res.status: eq 403
+  res.body.title: eq "Forbidden"
+  res.body.type: eq "/errors/access-denied"
+}
+
+tests {
+  test("Should deny access for readonly role on import endpoint", function() {
+    expect(res.status).to.equal(403);
+    expect(res.body.title).to.equal('Forbidden');
+    expect(res.body.type).to.equal('/errors/access-denied');
+  });
+  
+  test("Should include correlation ID in error response", function() {
+    expect(res.headers['x-correlation-id']).to.be.a('string');
+  });
+}
