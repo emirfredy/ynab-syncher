@@ -1,0 +1,92 @@
+# Docker Infrastructure for YNAB Syncher
+# Provides PostgreSQL + Keycloak for docker profile testing
+# Application still uses H2 by default (no behavior change)
+
+services:
+  # PostgreSQL Database
+  ynab-postgres:
+    image: postgres:15-alpine
+    container_name: ynab-postgres
+    environment:
+      POSTGRES_DB: ynabsyncher
+      POSTGRES_USER: ynabsyncher
+      POSTGRES_PASSWORD: ynabsyncher123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init:/docker-entrypoint-initdb.d
+    networks:
+      - ynab-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ynabsyncher -d ynabsyncher"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Keycloak Identity Provider
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: keycloak
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin123
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://ynab-postgres:5432/keycloak
+      KC_DB_USERNAME: ynabsyncher
+      KC_DB_PASSWORD: ynabsyncher123
+      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT_HTTPS: false
+      KC_HTTP_ENABLED: true
+      KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./infrastructure/docker/keycloak:/opt/keycloak/data/import
+    networks:
+      - ynab-network
+    depends_on:
+      ynab-postgres:
+        condition: service_healthy
+    command:
+      - start-dev
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # PgAdmin (Optional - for database administration)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@ynabsyncher.local
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "8082:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - ynab-network
+    depends_on:
+      ynab-postgres:
+        condition: service_healthy
+    profiles:
+      - admin
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  ynab-network:
+    driver: bridge
