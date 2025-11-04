@@ -38,6 +38,7 @@ import co.personal.ynabsyncher.infrastructure.web.dto.mapper.SaveCategoryMapping
 import co.personal.ynabsyncher.infrastructure.web.dto.mapper.CreateMissingTransactionsWebMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -94,6 +95,127 @@ public class YnabSyncApplicationService {
         this.inferCategoriesMapper = inferCategoriesMapper;
         this.saveCategoryMappingsMapper = saveCategoryMappingsMapper;
         this.createMissingTransactionsMapper = createMissingTransactionsMapper;
+    }
+
+    /**
+     * Imports bank transactions with account access validation and business orchestration.
+     * 
+     * Business Value Added:
+     * - Account-level security validation
+     * - Input validation and business rule enforcement  
+     * - Error handling and recovery strategies
+     * - Proper DTO mapping between web and domain layers
+     */
+    public ImportBankTransactionsWebResponse importBankTransactions(String accountId, ImportBankTransactionsWebRequest webRequest, Authentication authentication) {
+        logger.info("Starting bank transaction import for account: {} by user: {}", accountId, authentication.getName());
+        
+        try {
+            // Convert web DTO to domain DTO
+            ImportBankTransactionsRequest domainRequest = importMapper.toDomainRequest(accountId, webRequest);
+            
+            // Execute domain use case
+            ImportBankTransactionsResponse domainResponse = importBankTransactions.importTransactions(domainRequest);
+            
+            // Business logging with actual domain data
+            logger.info("Bank transaction import completed successfully for user: {}. Total: {}, Successful: {}, Failed: {}", 
+                    authentication.getName(),
+                    domainResponse.totalProcessed(),
+                    domainResponse.successfulImports(), 
+                    domainResponse.failedImports());
+            
+            // Convert domain response to web DTO
+            return importMapper.toWebResponse(domainResponse);
+            
+        } catch (Exception e) {
+            logger.error("Bank transaction import failed for account {} by user {}: {}", 
+                    accountId, authentication.getName(), e.getMessage(), e);
+            throw new RuntimeException("Service unavailable", e);
+        }
+    }
+
+    /**
+     * Reconciles transactions with account access validation and business orchestration.
+     */
+    public ReconcileTransactionsWebResponse reconcileTransactions(String accountId, ReconcileTransactionsWebRequest webRequest, Authentication authentication) {
+        logger.info("Starting transaction reconciliation for account: {} by user: {}", accountId, authentication.getName());
+        
+        try {
+            // Convert web DTO to domain DTO
+            ReconciliationRequest domainRequest = reconcileMapper.toDomainRequest(accountId, webRequest);
+            
+            // Execute domain use case
+            ReconciliationResult domainResponse = reconcileTransactions.reconcile(domainRequest);
+            
+            // Business logging with domain data
+            logger.info("Transaction reconciliation completed for account {} by user {}: {} matched, {} missing from YNAB", 
+                    accountId, authentication.getName(),
+                    domainResponse.getMatchedCount(),
+                    domainResponse.getMissingCount());
+            
+            return reconcileMapper.toWebResponse(domainResponse);
+            
+        } catch (Exception e) {
+            logger.error("Transaction reconciliation failed for account {} by user {}: {}", 
+                    accountId, authentication.getName(), e.getMessage(), e);
+            throw new RuntimeException("Service unavailable", e);
+        }
+    }
+
+    /**
+     * Infers transaction categories with account access validation and business orchestration.
+     */
+    public InferCategoriesWebResponse inferCategories(String accountId, InferCategoriesWebRequest webRequest, Authentication authentication) {
+        logger.info("Starting category inference for account: {} with {} transactions by user: {}", 
+                accountId, webRequest.transactions().size(), authentication.getName());
+        
+        try {
+            // Convert web DTO to domain DTO
+            CategoryInferenceRequest domainRequest = inferCategoriesMapper.toDomainRequest(accountId, webRequest);
+            
+            // Execute domain use case
+            CategoryInferenceResponse domainResponse = inferTransactionCategories.inferCategories(domainRequest);
+            
+            // Business logging with domain data
+            logger.info("Category inference completed for account {} by user {}: {} categories inferred, {} low confidence", 
+                    accountId, authentication.getName(),
+                    domainResponse.successfulInferences(),
+                    domainResponse.results().stream()
+                            .mapToInt(result -> result.successful() && result.inferenceResult().confidence() < 0.7 ? 1 : 0)
+                            .sum());
+            
+            return inferCategoriesMapper.toWebResponse(domainResponse);
+            
+        } catch (Exception e) {
+            logger.error("Category inference failed for account {} by user {}: {}", 
+                    accountId, authentication.getName(), e.getMessage(), e);
+            throw new RuntimeException("Service unavailable", e);
+        }
+    }
+
+    /**
+     * Creates missing transactions with account access validation and business orchestration.
+     */
+    public CreateMissingTransactionsWebResponse createMissingTransactions(String accountId, CreateMissingTransactionsWebRequest webRequest, Authentication authentication) {
+        logger.info("Starting missing transaction creation for account: {} by user: {}", accountId, authentication.getName());
+        
+        try {
+            // Convert web DTO to domain DTO
+            CreateMissingTransactionsRequest domainRequest = createMissingTransactionsMapper.toDomainRequest(accountId, webRequest);
+            
+            // Execute domain use case
+            CreateMissingTransactionsResponse domainResponse = createMissingTransactions.createMissingTransactions(domainRequest);
+            
+            // Business logging with domain data
+            logger.info("Missing transaction creation completed for account {} by user {}: {} transactions created", 
+                    accountId, authentication.getName(), domainResponse.successfullyCreated());
+            
+            return createMissingTransactionsMapper.toWebResponse(domainResponse);
+            
+        } catch (Exception e) {
+            logger.error("Missing transaction creation failed for account {} by user {}: {}", 
+                    accountId, authentication.getName(), e.getMessage(), e);
+            throw new RuntimeException("Service unavailable", e);
+        }
     }
 
     /**

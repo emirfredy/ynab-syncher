@@ -1,6 +1,7 @@
 package co.personal.ynabsyncher.infrastructure.web;
 
 import co.personal.ynabsyncher.api.error.YnabApiException;
+import co.personal.ynabsyncher.infrastructure.exception.AccountAccessDeniedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -13,6 +14,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 import java.net.URI;
 import java.time.Instant;
@@ -99,6 +101,25 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles Spring Boot 3.5+ handler method validation errors.
+     */
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ProblemDetail> handleHandlerMethodValidationException(HandlerMethodValidationException ex) {
+        logger.warn("Handler method validation errors: {}", ex.getMessage());
+        
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "Request validation failed");
+        problemDetail.setTitle("Request Validation Error");
+        problemDetail.setType(URI.create("/errors/request-validation-error"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        problemDetail.setProperty("validationDetail", ex.getReason());
+        
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .header(CORRELATION_ID_HEADER, getCorrelationId())
+                .body(problemDetail);
+    }
+
+    /**
      * Handles Spring Security authorization exceptions (403 Forbidden).
      * These should not be caught by the generic exception handler.
      */
@@ -114,6 +135,34 @@ public class GlobalExceptionHandler {
         
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .header(CORRELATION_ID_HEADER, getCorrelationId())
+                .body(problemDetail);
+    }
+
+    /**
+     * Handles account access denied exceptions from Phase 3 authorization.
+     * These indicate that a user attempted to access an account they don't own.
+     */
+    @ExceptionHandler(AccountAccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleAccountAccessDenied(AccountAccessDeniedException ex) {
+        String correlationId = getCorrelationId();
+        
+        // Log with structured information for security auditing
+        if (ex.getUserId() != null && ex.getAccountId() != null) {
+            logger.warn("Account access denied: user '{}' attempted '{}' on account '{}' [correlationId={}]",
+                       ex.getUserId(), ex.getOperation(), ex.getAccountId(), correlationId);
+        } else {
+            logger.warn("Account access denied: {} [correlationId={}]", ex.getMessage(), correlationId);
+        }
+        
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, "You do not have permission to access this account");
+        problemDetail.setTitle("Account Access Denied");
+        problemDetail.setType(URI.create("/errors/account-access-denied"));
+        problemDetail.setProperty("timestamp", Instant.now());
+        problemDetail.setProperty("correlationId", correlationId);
+        
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .header(CORRELATION_ID_HEADER, correlationId)
                 .body(problemDetail);
     }
 

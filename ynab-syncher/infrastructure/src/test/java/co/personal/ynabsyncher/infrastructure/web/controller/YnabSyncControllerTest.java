@@ -15,12 +15,14 @@ import co.personal.ynabsyncher.infrastructure.web.dto.SaveCategoryMappingsWebRes
 import co.personal.ynabsyncher.infrastructure.web.dto.BankTransactionWebData;
 import co.personal.ynabsyncher.infrastructure.web.dto.CategoryMappingWebData;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -68,6 +70,11 @@ class YnabSyncControllerTest {
     @MockitoBean
     private YnabSyncApplicationService ynabSyncApplicationService;
 
+    @BeforeEach
+    void setUp() {
+        // No additional setup needed - application service handles all security internally
+    }
+
     @Test
     @DisplayName("Should import bank transactions successfully with correlation ID")
     void shouldImportBankTransactionsSuccessfully() throws Exception {
@@ -80,7 +87,7 @@ class YnabSyncControllerTest {
                 1, 1, 0, List.of(), List.of("Import completed successfully")
         );
 
-        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any())).thenReturn(response);
+        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any(), any(Authentication.class))).thenReturn(response);
 
                 // When & Then - ADMIN role should have access to import endpoint 
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/import")
@@ -133,7 +140,7 @@ class YnabSyncControllerTest {
                 10, 10, 8, 2, 0, List.of(), List.of(), List.of()
         );
 
-        when(ynabSyncApplicationService.reconcileTransactions(eq("account-123"), any())).thenReturn(response);
+        when(ynabSyncApplicationService.reconcileTransactions(eq("account-123"), any(), any(Authentication.class))).thenReturn(response);
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/reconcile")
@@ -190,7 +197,7 @@ class YnabSyncControllerTest {
                 1, 1, 0, List.of()
         );
 
-        when(ynabSyncApplicationService.inferCategories(eq("account-123"), any())).thenReturn(response);
+        when(ynabSyncApplicationService.inferCategories(eq("account-123"), any(), any(Authentication.class))).thenReturn(response);
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/infer-categories")
@@ -222,7 +229,7 @@ class YnabSyncControllerTest {
                 1, 1, 0, List.of("txn-789"), List.of()
         );
 
-        when(ynabSyncApplicationService.createMissingTransactions(eq("account-123"), any())).thenReturn(response);
+        when(ynabSyncApplicationService.createMissingTransactions(eq("account-123"), any(), any(Authentication.class))).thenReturn(response);
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/create-missing")
@@ -336,7 +343,7 @@ class YnabSyncControllerTest {
                 List.of(new BankTransactionWebData("2024-01-15", "Test transaction", "100.00", "Test Merchant"))
         );
 
-        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any()))
+        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any(), any(Authentication.class)))
                 .thenThrow(new RuntimeException("Service unavailable"));
 
         // When & Then
@@ -746,7 +753,7 @@ class YnabSyncControllerTest {
         );
 
         // Test with a realistic account ID that contains special characters
-        when(ynabSyncApplicationService.importBankTransactions(eq("account-123-456"), any())).thenReturn(response);
+        when(ynabSyncApplicationService.importBankTransactions(eq("account-123-456"), any(), any(Authentication.class))).thenReturn(response);
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123-456/transactions/import")
@@ -786,19 +793,15 @@ class YnabSyncControllerTest {
     }
 
     @Test
-    @DisplayName("Should handle very long accountId path variable")
+    @DisplayName("Should reject very long accountId path variable")
     void shouldHandleVeryLongAccountId() throws Exception {
-        // Given - Very long account ID
+        // Given - Very long account ID (should be rejected by validation)
         String veryLongAccountId = "account-" + "a".repeat(200);
         ImportBankTransactionsWebRequest request = new ImportBankTransactionsWebRequest(
                 List.of(new BankTransactionWebData("2024-01-15", "Test", "100.00", "Merchant"))
         );
-        
-        ImportBankTransactionsWebResponse response = new ImportBankTransactionsWebResponse(
-                1, 1, 0, List.of(), List.of("Import completed successfully")
-        );
 
-        when(ynabSyncApplicationService.importBankTransactions(eq(veryLongAccountId), any())).thenReturn(response);
+        // No need to mock service since validation will reject the request before it reaches the service
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/" + veryLongAccountId + "/transactions/import")
@@ -810,9 +813,9 @@ class YnabSyncControllerTest {
                         ) // USER role for transactions
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andExpect(header().exists("X-Correlation-ID"))
-                .andExpect(jsonPath("$.totalTransactions").value(1));
+                .andExpect(jsonPath("$.title").value("Request Validation Error"));
     }
 
     // ==============================================================================
@@ -837,7 +840,7 @@ class YnabSyncControllerTest {
                 1000, 1000, 0, List.of(), List.of("Large import completed successfully")
         );
 
-        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any())).thenReturn(response);
+        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any(), any(Authentication.class))).thenReturn(response);
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/import")
@@ -877,7 +880,7 @@ class YnabSyncControllerTest {
                 1, 1, 0, List.of(), List.of("Import with long strings completed")
         );
 
-        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any())).thenReturn(response);
+        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any(), any(Authentication.class))).thenReturn(response);
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/import")
@@ -1064,7 +1067,7 @@ class YnabSyncControllerTest {
                 1, 1, 0, List.of(), List.of("Minimal payload processed")
         );
 
-        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any())).thenReturn(response);
+        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any(), any(Authentication.class))).thenReturn(response);
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/import")
@@ -1142,7 +1145,7 @@ class YnabSyncControllerTest {
                 5, 5, 5, 0, 0, List.of(), List.of(), List.of()
         );
 
-        when(ynabSyncApplicationService.reconcileTransactions(eq("account-123"), any())).thenReturn(response);
+        when(ynabSyncApplicationService.reconcileTransactions(eq("account-123"), any(), any(Authentication.class))).thenReturn(response);
 
         // When & Then
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/reconcile")
@@ -1266,7 +1269,7 @@ class YnabSyncControllerTest {
                 1, 1, 0, List.of(), List.of("Import completed successfully")
         );
 
-        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any())).thenReturn(response);
+        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any(), any(Authentication.class))).thenReturn(response);
 
         // When & Then - USER role should be allowed
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/import")
@@ -1315,7 +1318,7 @@ class YnabSyncControllerTest {
                 1, 1, 0, List.of()
         );
 
-        when(ynabSyncApplicationService.inferCategories(eq("account-123"), any())).thenReturn(response);
+        when(ynabSyncApplicationService.inferCategories(eq("account-123"), any(), any(Authentication.class))).thenReturn(response);
 
         // When & Then - READ_ONLY role should be allowed (read-only operation)
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/infer-categories")
@@ -1341,7 +1344,7 @@ class YnabSyncControllerTest {
                 1, 1, 0, List.of(), List.of("Import completed successfully")
         );
 
-        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any())).thenReturn(importResponse);
+        when(ynabSyncApplicationService.importBankTransactions(eq("account-123"), any(), any(Authentication.class))).thenReturn(importResponse);
 
         // When & Then - ADMIN role should be allowed for any endpoint
         mockMvc.perform(post("/api/v1/reconciliation/accounts/account-123/transactions/import")

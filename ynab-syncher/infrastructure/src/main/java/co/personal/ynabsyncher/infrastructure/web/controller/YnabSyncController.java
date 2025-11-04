@@ -11,12 +11,14 @@ import co.personal.ynabsyncher.infrastructure.web.dto.ReconcileTransactionsWebRe
 import co.personal.ynabsyncher.infrastructure.web.dto.ReconcileTransactionsWebResponse;
 import co.personal.ynabsyncher.infrastructure.web.dto.SaveCategoryMappingsWebRequest;
 import co.personal.ynabsyncher.infrastructure.web.dto.SaveCategoryMappingsWebResponse;
+import co.personal.ynabsyncher.infrastructure.web.validation.ValidAccountId;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -78,27 +80,35 @@ public class YnabSyncController {
      * Workflow Position: Step 1 of YNAB-Bank reconciliation process
      * 
      * Security: Requires USER role or higher (ADMIN also allowed)
+     * Phase 3: Account-level authorization - user must own the account
      * 
      * @param accountId the bank account identifier
      * @param request the import request containing transaction data
+     * @param authentication the current user's authentication details
      * @return the import response with results and statistics
      */
     @PostMapping("/accounts/{accountId}/transactions/import")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ImportBankTransactionsWebResponse> importBankTransactions(
-            @PathVariable String accountId,
-            @Valid @RequestBody ImportBankTransactionsWebRequest request) {
+            @PathVariable @ValidAccountId String accountId,
+            @Valid @RequestBody ImportBankTransactionsWebRequest request,
+            Authentication authentication) {
         
         String correlationId = generateCorrelationId();
+        String userId = authentication.getName();
+        
         MDC.put("correlationId", correlationId);
+        MDC.put("userId", userId);
+        MDC.put("accountId", accountId);
+        MDC.put("operation", "import-transactions");
         
         try {
-            logger.info("Starting bank transaction import for account: {}", accountId);
+            logger.info("Starting bank transaction import for account: {} by user: {}", accountId, userId);
             
-            ImportBankTransactionsWebResponse response = ynabSyncApplicationService.importBankTransactions(accountId, request);
+            ImportBankTransactionsWebResponse response = ynabSyncApplicationService.importBankTransactions(accountId, request, authentication);
             
-            logger.info("Bank transaction import completed successfully. Total: {}, Successful: {}, Failed: {}",
-                    response.totalTransactions(), response.successfulImports(), response.failedImports());
+            logger.info("Bank transaction import completed successfully for user: {}. Total: {}, Successful: {}, Failed: {}",
+                    userId, response.totalTransactions(), response.successfulImports(), response.failedImports());
             
             return ResponseEntity.ok()
                     .header(CORRELATION_ID_HEADER, correlationId)
@@ -119,35 +129,43 @@ public class YnabSyncController {
      * Workflow Position: Step 2 of YNAB-Bank reconciliation process
      * 
      * Security: Requires USER role or higher (ADMIN also allowed)
+     * Phase 3: Account-level authorization - user must own the account
      * 
      * @param accountId the bank account identifier
      * @param request the reconciliation request containing date range and strategy
+     * @param authentication the current user's authentication details
      * @return the reconciliation response with matched and missing transactions
      */
     @PostMapping("/accounts/{accountId}/reconcile")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ReconcileTransactionsWebResponse> reconcileTransactions(
-            @PathVariable String accountId,
-            @Valid @RequestBody ReconcileTransactionsWebRequest request) {
+            @PathVariable @ValidAccountId String accountId,
+            @Valid @RequestBody ReconcileTransactionsWebRequest request,
+            Authentication authentication) {
         
         String correlationId = generateCorrelationId();
+        String userId = authentication.getName();
+        
         MDC.put("correlationId", correlationId);
+        MDC.put("userId", userId);
+        MDC.put("accountId", accountId);
+        MDC.put("operation", "reconcile-transactions");
         
         try {
-            logger.info("Starting transaction reconciliation for account: {} from {} to {}", 
-                    accountId, request.fromDate(), request.toDate());
+            logger.info("Starting transaction reconciliation for account: {} from {} to {} by user: {}", 
+                    accountId, request.fromDate(), request.toDate(), userId);
             
-            ReconcileTransactionsWebResponse response = ynabSyncApplicationService.reconcileTransactions(accountId, request);
+            ReconcileTransactionsWebResponse response = ynabSyncApplicationService.reconcileTransactions(accountId, request, authentication);
             
-            logger.info("Transaction reconciliation completed for account {}: {} matched, {} missing from YNAB",
-                    accountId, response.matchedTransactions(), response.missingFromYnab());
+            logger.info("Transaction reconciliation completed for account {} by user {}: {} matched, {} missing from YNAB",
+                    accountId, userId, response.matchedTransactions(), response.missingFromYnab());
             
             return ResponseEntity.ok()
                     .header(CORRELATION_ID_HEADER, correlationId)
                     .body(response);
                     
         } catch (Exception e) {
-            logger.error("Failed to reconcile transactions for account: {}", accountId, e);
+            logger.error("Failed to reconcile transactions for account: {} by user: {}", accountId, userId, e);
             throw e;
         } finally {
             MDC.clear();
@@ -161,35 +179,43 @@ public class YnabSyncController {
      * Workflow Position: Optional step for enhanced categorization
      * 
      * Security: Requires READ_ONLY role or higher (read-only operation)
+     * Phase 3: Account-level authorization - user must own the account
      * 
      * @param accountId the bank account identifier
      * @param request the inference request containing transactions to categorize
+     * @param authentication the current user's authentication details
      * @return the inference response with category suggestions and confidence scores
      */
     @PostMapping("/accounts/{accountId}/transactions/infer-categories")
     @PreAuthorize("hasRole('READ_ONLY') or hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<InferCategoriesWebResponse> inferCategories(
-            @PathVariable String accountId,
-            @Valid @RequestBody InferCategoriesWebRequest request) {
+            @PathVariable @ValidAccountId String accountId,
+            @Valid @RequestBody InferCategoriesWebRequest request,
+            Authentication authentication) {
         
         String correlationId = generateCorrelationId();
+        String userId = authentication.getName();
+        
         MDC.put("correlationId", correlationId);
+        MDC.put("userId", userId);
+        MDC.put("accountId", accountId);
+        MDC.put("operation", "infer-categories");
         
         try {
-            logger.info("Starting category inference for account: {} with {} transactions", 
-                    accountId, request.transactions().size());
+            logger.info("Starting category inference for account: {} with {} transactions by user: {}", 
+                    accountId, request.transactions().size(), userId);
             
-            InferCategoriesWebResponse response = ynabSyncApplicationService.inferCategories(accountId, request);
+            InferCategoriesWebResponse response = ynabSyncApplicationService.inferCategories(accountId, request, authentication);
             
-            logger.info("Category inference completed for account {}: {} categories inferred, {} low confidence",
-                    accountId, response.categoriesInferred(), response.lowConfidenceResults());
+            logger.info("Category inference completed for account {} by user {}: {} categories inferred, {} low confidence",
+                    accountId, userId, response.categoriesInferred(), response.lowConfidenceResults());
             
             return ResponseEntity.ok()
                     .header(CORRELATION_ID_HEADER, correlationId)
                     .body(response);
                     
         } catch (Exception e) {
-            logger.error("Failed to infer categories for account: {}", accountId, e);
+            logger.error("Failed to infer categories for account: {} by user: {}", accountId, userId, e);
             throw e;
         } finally {
             MDC.clear();
@@ -203,35 +229,43 @@ public class YnabSyncController {
      * Workflow Position: Step 3 of YNAB-Bank reconciliation process
      * 
      * Security: Requires USER role or higher (creates data in YNAB)
+     * Phase 3: Account-level authorization - user must own the account
      * 
      * @param accountId the bank account identifier
      * @param request the creation request containing missing transaction data
+     * @param authentication the current user's authentication details
      * @return the creation response with results and statistics
      */
     @PostMapping("/accounts/{accountId}/transactions/create-missing")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<CreateMissingTransactionsWebResponse> createMissingTransactions(
-            @PathVariable String accountId,
-            @Valid @RequestBody CreateMissingTransactionsWebRequest request) {
+            @PathVariable @ValidAccountId String accountId,
+            @Valid @RequestBody CreateMissingTransactionsWebRequest request,
+            Authentication authentication) {
         
         String correlationId = generateCorrelationId();
+        String userId = authentication.getName();
+        
         MDC.put("correlationId", correlationId);
+        MDC.put("userId", userId);
+        MDC.put("accountId", accountId);
+        MDC.put("operation", "create-missing-transactions");
         
         try {
-            logger.info("Starting missing transaction creation for account: {} with {} transactions", 
-                    accountId, request.missingTransactions().size());
+            logger.info("Starting missing transaction creation for account: {} with {} transactions by user: {}", 
+                    accountId, request.missingTransactions().size(), userId);
             
-            CreateMissingTransactionsWebResponse response = ynabSyncApplicationService.createMissingTransactions(accountId, request);
+            CreateMissingTransactionsWebResponse response = ynabSyncApplicationService.createMissingTransactions(accountId, request, authentication);
             
-            logger.info("Missing transaction creation completed for account {}: {} successful, {} failed",
-                    accountId, response.successfulCreations(), response.failedCreations());
+            logger.info("Missing transaction creation completed for account {} by user {}: {} successful, {} failed",
+                    accountId, userId, response.successfulCreations(), response.failedCreations());
             
             return ResponseEntity.ok()
                     .header(CORRELATION_ID_HEADER, correlationId)
                     .body(response);
                     
         } catch (Exception e) {
-            logger.error("Failed to create missing transactions for account: {}", accountId, e);
+            logger.error("Failed to create missing transactions for account: {} by user: {}", accountId, userId, e);
             throw e;
         } finally {
             MDC.clear();
@@ -284,4 +318,5 @@ public class YnabSyncController {
     private String generateCorrelationId() {
         return UUID.randomUUID().toString();
     }
+    
 }
