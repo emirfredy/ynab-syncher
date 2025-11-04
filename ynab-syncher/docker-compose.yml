@@ -53,7 +53,6 @@ services:
         condition: service_healthy
     command:
       - start-dev
-      - --import-realm
     healthcheck:
       test:
         ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
