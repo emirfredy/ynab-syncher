@@ -3,6 +3,7 @@ package co.personal.ynabsyncher.usecase;
 import co.personal.ynabsyncher.api.dto.SaveCategoryMappingsRequest;
 import co.personal.ynabsyncher.api.dto.SaveCategoryMappingsResponse;
 import co.personal.ynabsyncher.api.usecase.SaveCategoryMappings;
+import co.personal.ynabsyncher.ddd.DomainService;
 import co.personal.ynabsyncher.model.CategoryMapping;
 import co.personal.ynabsyncher.model.TransactionPattern;
 import co.personal.ynabsyncher.spi.repository.CategoryMappingRepository;
@@ -22,6 +23,7 @@ import java.util.Set;
  * - Detects and handles conflicting categorizations
  * - Validates mapping quality before persistence
  */
+@DomainService
 public class SaveCategoryMappingsUseCase implements SaveCategoryMappings {
     
     private final CategoryMappingRepository categoryMappingRepository;

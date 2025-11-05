@@ -5,6 +5,7 @@ import co.personal.ynabsyncher.api.dto.CategoryInferenceResponse;
 import co.personal.ynabsyncher.api.dto.CategoryInferenceResponse.TransactionCategoryResult;
 import co.personal.ynabsyncher.api.dto.CategoryInferenceResultDto;
 import co.personal.ynabsyncher.api.usecase.InferTransactionCategories;
+import co.personal.ynabsyncher.ddd.DomainService;
 import co.personal.ynabsyncher.model.CategoryMapping;
 import co.personal.ynabsyncher.model.TransactionPattern;
 import co.personal.ynabsyncher.model.bank.BankTransaction;
@@ -28,6 +29,7 @@ import java.util.Optional;
  * Architecture note: Since BankTransactionRepository is read-only (external data source),
  * this use case only performs inference and returns results without saving anything.
  */
+@DomainService
 public class InferTransactionCategoriesUseCase implements InferTransactionCategories {
     
     private final BankTransactionRepository bankTransactionRepository;

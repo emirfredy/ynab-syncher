@@ -4,6 +4,7 @@ import co.personal.ynabsyncher.api.dto.BankTransactionData;
 import co.personal.ynabsyncher.api.dto.ImportBankTransactionsRequest;
 import co.personal.ynabsyncher.api.dto.ImportBankTransactionsResponse;
 import co.personal.ynabsyncher.api.usecase.ImportBankTransactions;
+import co.personal.ynabsyncher.ddd.DomainService;
 import co.personal.ynabsyncher.model.AccountId;
 import co.personal.ynabsyncher.model.Money;
 import co.personal.ynabsyncher.model.TransactionId;
@@ -24,6 +25,7 @@ import java.util.Set;
  * 
  * Framework-free domain implementation following hexagonal architecture.
  */
+@DomainService
 public class ImportBankTransactionsUseCase implements ImportBankTransactions {
 
     private static final int MAX_MERCHANT_NAME_LENGTH = 50;

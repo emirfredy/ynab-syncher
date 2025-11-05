@@ -4,6 +4,7 @@ import co.personal.ynabsyncher.api.dto.CreateMissingTransactionsRequest;
 import co.personal.ynabsyncher.api.dto.CreateMissingTransactionsResponse;
 import co.personal.ynabsyncher.api.dto.TransactionCreationResult;
 import co.personal.ynabsyncher.api.usecase.CreateMissingTransactions;
+import co.personal.ynabsyncher.ddd.DomainService;
 import co.personal.ynabsyncher.model.Category;
 import co.personal.ynabsyncher.model.TransactionId;
 import co.personal.ynabsyncher.model.bank.BankTransaction;
@@ -24,6 +25,7 @@ import java.util.Objects;
  * 
  * Typically used with transactions from ReconciliationResult.missingFromYnab().
  */
+@DomainService
 public class CreateMissingTransactionsUseCase implements CreateMissingTransactions {
     
     private final YnabApiClient ynabApiClient;

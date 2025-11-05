@@ -1,6 +1,7 @@
 package co.personal.ynabsyncher.usecase;
 
 import co.personal.ynabsyncher.api.usecase.ReconcileTransactions;
+import co.personal.ynabsyncher.ddd.DomainService;
 import co.personal.ynabsyncher.model.bank.BankTransaction;
 import co.personal.ynabsyncher.model.matcher.TransactionMatcher;
 import co.personal.ynabsyncher.model.matcher.TransactionMatcherFactory;
@@ -25,6 +26,7 @@ import java.util.Objects;
  * This class contains the business logic for reconciling transactions between YNAB and bank accounts,
  * including category inference for uncategorized bank transactions.
  */
+@DomainService
 public class ReconcileTransactionsUseCase implements ReconcileTransactions {
 
     private final YnabTransactionRepository ynabTransactionRepository;
